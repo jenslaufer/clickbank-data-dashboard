@@ -1,0 +1,103 @@
+---
+title: "Clickbank Data Analytics"
+author: "Jens Laufer"
+date: "30 10 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = T, warning = F, message = F)
+```
+
+```{r}
+library(tidyverse)
+library(glue)
+library(XML)
+library(methods)
+library(jsonlite)
+library(DT)
+```
+
+```{r}
+url <-
+  "https://accounts.clickbank.com/feeds/marketplace_feed_v2.xml.zip"
+target.dir <- tempdir()
+target.file <- "{target.dir}/clickbank.zip" %>% glue()
+xml.file.name <- "{target.dir}/marketplace_feed_v2.xml" %>% glue()
+
+if (!file.exists(target.file)) {
+  download.file(url,
+                target.file)
+  unzip(target.file, exdir = target.dir)
+}
+
+data <-
+  xmlToDataFrame(nodes = getNodeSet(xmlParse(file = xml.file.name), "//Site")) %>%
+  mutate_at(
+    c(
+      "Gravity",
+      "PercentPerSale",
+      "PercentPerRebill",
+      "AverageEarningsPerSale",
+      "InitialEarningsPerSale",
+      "TotalRebillAmt",
+      "Referred",
+      "Commission"
+    ),
+    as.double
+  ) %>%
+  mutate(
+    ActivateDate = as.Date(ActivateDate),
+    HasRecurringProducts = if_else(HasRecurringProducts == 'true', T, F)
+  )
+```
+
+## Univariate Data Analysis
+
+
+```{r}
+data %>%
+  group_by(HasRecurringProducts) %>% 
+  summarise(n=n()) %>% 
+  ggplot() +
+  geom_bar(aes(x=HasRecurringProducts, y=n), stat = 'identity')
+  
+```
+
+
+
+```{r fig.height=20, fig.width=20}
+data %>%
+  gather(
+    -Id,
+    -Title,
+    -PopularityRank,
+    -Description,
+    -HasRecurringProducts,
+    -ActivateDate,
+    key = "var",
+    value = "val"
+  ) %>%
+  ggplot(aes(x = '', y=val)) +
+  geom_boxplot() +
+  geom_jitter(alpha=0.2, color='orange')+
+  facet_wrap( ~ var, scales = "free")
+```
+
+
+## Bivariate Data Analysis
+
+
+```{r fig.height=10, fig.width=10}
+cor(
+  data %>% select(
+    -Id,
+    -Title,
+    -PopularityRank,
+    -Description,
+    -HasRecurringProducts,
+    -ActivateDate
+  )
+) %>% corrplot::corrplot()
+```
+

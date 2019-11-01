@@ -6,17 +6,23 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = T, warning = F, message = F)
+knitr::opts_chunk$set(echo = F, warning = F, message = F)
 ```
 
 ```{r}
-library(tidyverse)
 library(glue)
 library(XML)
 library(methods)
 library(jsonlite)
 library(DT)
+library(ggthemes)
+library(devtools)
+library(ggrepel)
+library(tidyverse)
+library(ggbiplot)
 ```
+
+
 
 ```{r}
 url <-
@@ -31,34 +37,107 @@ if (!file.exists(target.file)) {
   unzip(target.file, exdir = target.dir)
 }
 
+numeric.cols <-  c(
+  "Gravity",
+  "PercentPerSale",
+  "PercentPerRebill",
+  "AverageEarningsPerSale",
+  "InitialEarningsPerSale",
+  "TotalRebillAmt",
+  "Referred",
+  "Commission"
+)
 data <-
-  xmlToDataFrame(nodes = getNodeSet(xmlParse(file = xml.file.name), "//Site")) %>%
-  mutate_at(
-    c(
-      "Gravity",
-      "PercentPerSale",
-      "PercentPerRebill",
-      "AverageEarningsPerSale",
-      "InitialEarningsPerSale",
-      "TotalRebillAmt",
-      "Referred",
-      "Commission"
-    ),
-    as.double
-  ) %>%
+  xmlToDataFrame(nodes = getNodeSet(
+    xmlParse(file = xml.file.name, encoding = "ISO-8859-1"),
+    "//Site"
+  )) %>%
   mutate(
+    PopularityRank = as.integer(as.character(PopularityRank)),
+    PopularityRank_bin = cut(
+      PopularityRank,
+      breaks = quantile(PopularityRank, probs =
+                          seq(0, 1, 0.2)),
+      include.lowest = T
+    ),
     ActivateDate = as.Date(ActivateDate),
     HasRecurringProducts = if_else(HasRecurringProducts == 'true', T, F)
-  )
+  ) %>%
+  mutate_at(numeric.cols, as.double) %>% #
+  mutate_at(numeric.cols, .funs = list(bin =  ~ cut(
+    ., breaks = unique(quantile(
+      ., probs = seq(0, 1, by = 0.20), na.rm = T
+    ),), include.lowest = T
+  ))) %>%
+  group_by(Id) %>%
+  arrange(Id, PopularityRank) %>%
+  slice(1) %>%
+  ungroup() 
+
+
+data.pca <- data %>%
+  dplyr::select(numeric.cols) %>%
+  prcomp(center = T, scale. = T)
+
+data <- data %>% bind_cols(data.pca$x %>% as_tibble())
 ```
+
+
+
+PopularityRank
+
+
+__Gravity__
+
+Gravity is the number of different affiliates that are currently making sales of any given product.
+
+Gravity helps you to find products, that already proving themselves.
+
+You ideally look for products with at least 6.
+
+High Gravity means high success rate, but also high competition.
+
+
+__PercentPerSale__
+
+The Percentage of Profits You Get from Each Customer
+
+__PercentPerRebill__
+
+__AverageEarningsPerSale__
+
+The Average Amount Affiliates Make Per Customer Over Time
+
+__InitialEarningsPerSale__
+
+The Amount You'll Make Straight Away from a Single Sale.
+
+__TotalRebillAmt__
+
+The Average Amount People Spend After Their Initial Purchases (if They Buy More)
+
+__Referred__
+
+__Commission__
+
 
 ## Univariate Data Analysis
 
 
+
+```{r fig.height=10, fig.width=20}
+data %>%  
+  select(PopularityRank, PopularityRank_bin) %>% 
+  group_by(PopularityRank_bin) %>% 
+  dplyr::summarise(n=n()) %>% 
+  ggplot() +
+  geom_bar(aes(PopularityRank_bin, n), stat='identity')
+```
+
 ```{r}
 data %>%
   group_by(HasRecurringProducts) %>% 
-  summarise(n=n()) %>% 
+  dplyr::summarise(n=n()) %>% 
   ggplot() +
   geom_bar(aes(x=HasRecurringProducts, y=n), stat = 'identity')
   
@@ -66,15 +145,23 @@ data %>%
 
 
 
+```{r fig.height=10, fig.width=20}
+data %>% 
+  dplyr::select(contains('_bin')) %>% 
+  gather(key = "var", value = "val") %>% 
+  group_by(var, val) %>% 
+  dplyr::summarise(n=n()) %>% 
+  ggplot() +
+  geom_bar(aes(val, n), stat='identity') +
+  facet_wrap(~var, scales = "free")
+```
+
+
+
 ```{r fig.height=20, fig.width=20}
-data %>%
+data %>% 
+  dplyr::select(numeric.cols) %>%
   gather(
-    -Id,
-    -Title,
-    -PopularityRank,
-    -Description,
-    -HasRecurringProducts,
-    -ActivateDate,
     key = "var",
     value = "val"
   ) %>%
@@ -88,16 +175,53 @@ data %>%
 ## Bivariate Data Analysis
 
 
-```{r fig.height=10, fig.width=10}
-cor(
-  data %>% select(
-    -Id,
-    -Title,
-    -PopularityRank,
-    -Description,
-    -HasRecurringProducts,
-    -ActivateDate
-  )
-) %>% corrplot::corrplot()
+```{r}
+cor.matrix <- cor(
+  data %>% dplyr::select(numeric.cols)
+) 
+
+features.corr <- cor.matrix %>% 
+  as_tibble(rownames = "source") %>% 
+  gather(-source, key = "target", value = "corr") %>%
+  filter(source != target) %>% 
+  group_by(corr) %>% 
+  slice(1) %>% 
+  ungroup() %>% 
+  filter(corr < 0.3) %>% 
+  arrange(corr) 
+
+features <- c(features.corr %>% pull(source), features.corr %>% pull(target)) %>% unique()
+
 ```
+```{r}
+cor.matrix %>% corrplot::corrplot()
+```
+
+```{r fig.height=20, fig.width=20}
+data %>% 
+  na.omit %>% 
+  ggplot()+
+  geom_jitter(aes(x=Gravity, y=PercentPerSale, color=HasRecurringProducts), alpha=0.4) +
+  scale_color_tableau() +
+  facet_wrap(~AverageEarningsPerSale_bin~InitialEarningsPerSale_bin)+
+  coord_flip()
+```
+
+```{r}
+data %>% 
+  filter(AverageEarningsPerSale > 100 & Gravity > 30) %>% 
+  ggplot(aes(x=Gravity, y=AverageEarningsPerSale)) +
+  scale_color_continuous_tableau()+
+  geom_bin2d(bins=5)
+```
+```{r}
+
+```
+
+
+
+
+
+
+
 

@@ -24,6 +24,10 @@ shinyUI(fluidPage(
             .slider.input("Commission", "Commission")
         ),
         
-        mainPanel(plotOutput("gravityPlot"), DT::dataTableOutput("products"))
+        mainPanel(
+            DT::dataTableOutput("products"),
+            plotOutput("pcaPlot")#,
+            #plotOutput("gravityPlot")
+        )
     )
 ))

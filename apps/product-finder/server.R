@@ -4,7 +4,7 @@ library(logging)
 
 source("../api.R")
 
-.filter.values <- function(data, input) {
+.filter <- function(data, input) {
     data %>%
         filter(Gravity >= input$Gravity[1] &
                    Gravity <= input$Gravity[2]) %>%
@@ -65,20 +65,38 @@ shinyServer(function(input, output, session) {
     output$products <-
         DT::renderDataTable(
             data %>%
-                .filter.values(input) %>%
+                .filter(input) %>%
                 select(Id, Title, PopularityRank, Gravity, AverageEarningsPerSale),
             selection = 'single'
         )
     
     output$gravityPlot <- renderPlot({
         data %>%
-            .filter.values(input) %>%
+            .filter(input) %>%
             ggplot(aes(
                 x = Gravity,
                 y = AverageEarningsPerSale,
                 color = PopularityRank_bin
             )) +
             geom_point()
+        
+    })
+    
+    
+    output$pcaPlot <- renderPlot({
+        data %>%
+            mutate(isfiltered = if_else(Id %in% (
+                data %>% .filter(input) %>% pull(Id)
+            ) , T, F)) %>%
+            mutate(cluster = as.factor(cluster)) %>%
+            ggplot(aes(
+                x = PC1,
+                y = PC2,
+                fill = isfiltered,
+                color = cluster
+            )) +
+            geom_point(alpha = 0.6, size = 2) +
+            scale_color_tableau()
         
     })
     

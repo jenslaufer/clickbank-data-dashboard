@@ -1,5 +1,10 @@
 
 
+
+
+
+
+
 library(glue)
 library(XML)
 library(methods)
@@ -55,7 +60,7 @@ load.data <- function() {
       .,
       breaks = unique(quantile(
         ., probs = seq(0, 1, by = 0.20), na.rm = T
-      ), ),
+      ),),
       include.lowest = T
     ))) %>%
     group_by(Id) %>%
@@ -117,7 +122,7 @@ load.data <- function() {
       .,
       breaks = unique(quantile(
         ., probs = seq(0, 1, by = 0.20), na.rm = T
-      ),),
+      ), ),
       include.lowest = T
     ))) %>%
     group_by(Id) %>%
@@ -132,5 +137,7 @@ load.data <- function() {
   
   data <- data %>% bind_cols(data.pca$x %>% as_tibble())
   
+  fit <- kmeans(data %>% select(PC1, PC2), 5)
+  data <- data %>% mutate(cluster = fit$cluster)
   data
 }

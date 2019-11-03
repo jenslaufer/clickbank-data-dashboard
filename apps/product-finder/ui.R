@@ -18,6 +18,13 @@ shinyUI(fluidPage(
                 min = 0,
                 max = 100,
                 value = c(0, 100)
+            ),
+            sliderInput(
+                "initial.earnings",
+                "Initial Earnings Per Sale",
+                min = 0,
+                max = 100,
+                value = c(0, 100)
             )
         ),
         

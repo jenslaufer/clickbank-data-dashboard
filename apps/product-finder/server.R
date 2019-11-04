@@ -28,6 +28,12 @@ source("../api.R")
             TotalRebillAmt >= input$TotalRebillAmt[1] &
                 TotalRebillAmt <= input$TotalRebillAmt[2]
         ) %>%
+        filter(
+            PopularityRank >= input$PopularityRank[1] &
+                PopularityRank <= input$PopularityRank[2]
+        ) %>%
+        filter(ActivateDate >= input$ActivateDate[1] &
+                   ActivateDate <= input$ActivateDate[2]) %>%
         filter(Referred >= input$Referred[1] &
                    Referred <= input$Referred[2]) %>%
         filter(Commission >= input$Commission[1] &
@@ -35,8 +41,9 @@ source("../api.R")
 }
 
 .update.slider <- function(data, session, field) {
-    max <- data %>% pull(field) %>% max()
-    min <- data %>% pull(field) %>% min()
+    max <- data %>% pull(field) %>% max(na.rm = TRUE)
+    min <- data %>% pull(field) %>% min(na.rm = TRUE)
+    logdebug("min: {min}, max: {max}" %>% glue)
     updateSliderInput(
         session,
         field,
@@ -47,11 +54,13 @@ source("../api.R")
 }
 
 shinyServer(function(input, output, session) {
+    basicConfig(level = 10)
     loginfo("initializing...")
     
     data <- load.data()
     
     .update.slider(data, session, "Gravity")
+    .update.slider(data, session, "PopularityRank")
     .update.slider(data, session, "AverageEarningsPerSale")
     .update.slider(data, session, "InitialEarningsPerSale")
     .update.slider(data, session, "PercentPerRebill")
@@ -59,6 +68,8 @@ shinyServer(function(input, output, session) {
     .update.slider(data, session, "TotalRebillAmt")
     .update.slider(data, session, "Referred")
     .update.slider(data, session, "Commission")
+    .update.slider(data, session, "ActivateDate")
+    
     
     loginfo("initializing.")
     
@@ -66,7 +77,17 @@ shinyServer(function(input, output, session) {
         DT::renderDataTable(
             data %>%
                 .filter(input) %>%
-                select(Id, Title, PopularityRank, Gravity, AverageEarningsPerSale),
+                mutate(cluster = as.factor(kmeans.cluster)) %>%
+                select(
+                    Id,
+                    cluster,
+                    Title,
+                    ActivateDate,
+                    PopularityRank,
+                    Gravity,
+                    AverageEarningsPerSale,
+                    InitialEarningsPerSale
+                ),
             selection = 'single'
         )
     
@@ -88,14 +109,15 @@ shinyServer(function(input, output, session) {
             mutate(isfiltered = if_else(Id %in% (
                 data %>% .filter(input) %>% pull(Id)
             ) , T, F)) %>%
-            mutate(cluster = as.factor(cluster)) %>%
+            mutate(cluster = as.factor(kmeans.cluster)) %>%
+            arrange(-Gravity, -AverageEarningsPerSale) %>%
             ggplot(aes(
                 x = PC1,
                 y = PC2,
-                fill = isfiltered,
                 color = cluster
             )) +
             geom_point(alpha = 0.6, size = 2) +
+            geom_encircle(color = "red", data = (data %>% .filter(input))) +
             scale_color_tableau()
         
     })

@@ -2,19 +2,21 @@ library(shiny)
 library(logging)
 library(DT)
 library(glue)
+library(lubridate)
 
 
 source("../api.R")
 
 .update.slider <- function(data, session, field) {
-    max <- data %>% pull(field) %>% max(na.rm = TRUE) 
-    min <- data %>% pull(field) %>% min(na.rm = TRUE) 
+    max <- data %>% pull(field) %>% max(na.rm = TRUE) + 1
+    min <-
+        data %>% pull(field) %>% min(na.rm = TRUE) - 1
+    
     logdebug("min: {min}, max: {max}" %>% glue)
+    
     updateSliderInput(
         session,
         field,
-        round = -5,
-        step = 1,
         max = max,
         min = min,
         value = c(min, max)
@@ -52,7 +54,6 @@ shinyServer(function(input, output, session) {
     })
     
     filtered.data <- reactive({
-        logdebug(input$Gravity)
         data %>%
             filter(Gravity >= input$Gravity[1] &
                        Gravity <= input$Gravity[2]) %>%
@@ -80,8 +81,10 @@ shinyServer(function(input, output, session) {
                 PopularityRank >= input$PopularityRank[1] &
                     PopularityRank <= input$PopularityRank[2]
             )  %>%
-            # filter(ActivateDate >= input$ActivateDate[1] &
-            #            ActivateDate <= input$ActivateDate[2]) %>%
+            filter(
+                ActivateDate >= as.Date(input$ActivateDate[1]) &
+                    ActivateDate <= as.Date(input$ActivateDate[2])
+            ) %>%
             filter(Referred >= input$Referred[1] &
                        Referred <= input$Referred[2]) %>%
             filter(Commission >= input$Commission[1] &
@@ -139,14 +142,13 @@ shinyServer(function(input, output, session) {
     output$pcaPlot <- renderPlot({
         data %>%
             mutate(cluster = as.factor(kmeans.cluster)) %>%
-            arrange(-Gravity,-AverageEarningsPerSale) %>%
+            arrange(-Gravity, -AverageEarningsPerSale) %>%
             ggplot(aes(
                 x = PC1,
                 y = PC2,
                 color = cluster
             )) +
             geom_point(alpha = 0.6, size = 2) +
-            #geom_encircle(color = "red", data = filtered.data()) +
             scale_color_tableau()
         
     })

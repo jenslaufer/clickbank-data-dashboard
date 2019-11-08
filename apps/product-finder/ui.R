@@ -6,15 +6,11 @@ library(DT)
 
 
 .slider.input <- function(name, title) {
-    sliderInput(
-        name,
-        title,
-        round = -5,
-        step = 1,
-        min = 0,
-        max = 1,
-        value = c(0, 1)
-    )
+    sliderInput(name,
+                title,
+                min = 0,
+                max = 1,
+                value = c(0, 1))
 }
 
 shinyUI(fluidPage(

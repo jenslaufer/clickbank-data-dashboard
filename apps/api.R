@@ -34,6 +34,7 @@ load.data <- function() {
     "Referred",
     "Commission"
   )
+  
   data <-
     xmlToDataFrame(nodes = getNodeSet(
       xmlParse(file = xml.file.name, encoding = "ISO-8859-1"),
@@ -70,9 +71,11 @@ load.data <- function() {
     prcomp(center = T, scale. = T)
   
   data <- data %>% bind_cols(data.pca$x %>% as_tibble())
-  
   fit <- kmeans(data %>% select(PC1, PC2), 5)
-  data <- data %>% mutate(kmeans.cluster = fit$cluster)
+  
+
+  data <- data %>% mutate(kmeans.cluster = fit$cluster) %>% 
+    mutate(ActivateDate = if_else(is.na(ActivateDate), as.Date("2000-01-01"), ActivateDate))
   
   
   # gmm <- Mclust(data %>% select(numeric.cols))

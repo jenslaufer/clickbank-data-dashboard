@@ -3,6 +3,7 @@ library(logging)
 library(DT)
 library(glue)
 library(lubridate)
+library(ggrepel)
 
 
 source("../api.R")
@@ -142,7 +143,7 @@ shinyServer(function(input, output, session) {
     output$pcaPlot <- renderPlot({
         data %>%
             mutate(cluster = as.factor(kmeans.cluster)) %>%
-            arrange(-Gravity, -AverageEarningsPerSale) %>%
+            arrange(-Gravity,-AverageEarningsPerSale) %>%
             ggplot(aes(
                 x = PC1,
                 y = PC2,
@@ -150,7 +151,36 @@ shinyServer(function(input, output, session) {
             )) +
             geom_point(alpha = 0.6, size = 2) +
             scale_color_tableau()
+    })
+    
+    output$pcaPlotMagnifier <- renderPlot({
+        data <- brushed.data()
+        data <-
+            data %>%
+            mutate(Title = as.character(Title)) %>%
+            mutate(selected.title = if_else(
+                Gravity %in%
+                    (
+                        data %>%
+                            arrange(-Gravity) %>%
+                            head(10) %>% pull(Gravity)
+                    ),
+                Title,
+                ""
+            ))
         
+        
+        data %>%
+            mutate(cluster = as.factor(kmeans.cluster)) %>%
+            arrange(-Gravity,-AverageEarningsPerSale) %>%
+            ggplot(aes(
+                x = PC1,
+                y = PC2,
+                color = cluster
+            )) +
+            geom_point(alpha = 0.6, size = 2) +
+            geom_label_repel(aes(label = selected.title)) +
+            scale_color_tableau()
     })
     
 })

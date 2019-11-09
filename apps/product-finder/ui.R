@@ -40,9 +40,19 @@ shinyUI(fluidPage(
                          plotOutput("dummy") %>% withSpinner(type = 6)
                      )
                  )),
+        
         tabPanel(
             "Plot Filtering",
-            plotOutput("pcaPlot", brush = "pca.plot.brush") %>% withSpinner(type = 6),
+            fixedRow(
+                column(
+                    6,
+                    plotOutput("pcaPlot", brush = "pca.plot.brush") %>% withSpinner(type = 6)
+                ),
+                column(
+                    6,
+                    plotOutput("pcaPlotMagnifier", brush = "pca.plot.brush")
+                )
+            ),
             dataTableOutput("products.brushed")
         )
     )

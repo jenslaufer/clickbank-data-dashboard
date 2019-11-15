@@ -11,7 +11,9 @@ library(ggbiplot)
 library(mclust)
 library(ggalt)
 
-load.data <- function() {
+
+load.file <- function(){
+  
   url <-
     "https://accounts.clickbank.com/feeds/marketplace_feed_v2.xml.zip"
   target.dir <- tempdir()
@@ -23,6 +25,13 @@ load.data <- function() {
                   target.file)
     unzip(target.file, exdir = target.dir)
   }
+  
+  xml.file.name
+}
+
+load.data <- function() {
+  
+  xml.file.name <- load.file()
   
   numeric.cols <-  c(
     "Gravity",

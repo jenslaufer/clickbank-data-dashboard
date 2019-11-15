@@ -1,0 +1,29 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(mongolite)
+library(XML)
+library(jsonlite)
+library(tidyverse)
+```
+
+```{r}
+source("../apps/api.R")
+```
+
+
+```{r}
+filename <- load.file()
+```
+```{r}
+#xmlParse( system.file("exampleData", "book.xml", package="XML")) 
+doc <- xmlParse(file = xml.file.name, encoding = "ISO-8859-1"),
+      "//Site"
+    )
+a <- xmlToList(doc)
+jsonlite::toJSON(a, pretty=TRUE)
+```
+

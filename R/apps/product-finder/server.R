@@ -100,6 +100,7 @@ shinyServer(function(input, output, session) {
                 select(
                     Id,
                     cluster,
+                    Date,
                     Title,
                     ActivateDate,
                     PopularityRank,
@@ -117,6 +118,7 @@ shinyServer(function(input, output, session) {
                     Id,
                     cluster,
                     Title,
+                    Date,
                     ActivateDate,
                     PopularityRank,
                     Gravity,
@@ -143,7 +145,7 @@ shinyServer(function(input, output, session) {
     output$pcaPlot <- renderPlot({
         data %>%
             mutate(cluster = as.factor(kmeans.cluster)) %>%
-            arrange(-Gravity,-AverageEarningsPerSale) %>%
+            arrange(-Gravity, -AverageEarningsPerSale) %>%
             ggplot(aes(
                 x = PC1,
                 y = PC2,
@@ -172,7 +174,7 @@ shinyServer(function(input, output, session) {
         
         data %>%
             mutate(cluster = as.factor(kmeans.cluster)) %>%
-            arrange(-Gravity,-AverageEarningsPerSale) %>%
+            arrange(-Gravity, -AverageEarningsPerSale) %>%
             ggplot(aes(
                 x = PC1,
                 y = PC2,

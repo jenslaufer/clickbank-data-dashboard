@@ -47,11 +47,7 @@ load.data <- function(url = "mongodb://localhost") {
         ., probs = seq(0, 1, by = 0.20), na.rm = T
       ),),
       include.lowest = T
-    ))) %>%
-    filter(`Date` == max(`Date`), is.na(ParentCategory))
-  
-  print(data %>% select(ParentCategory) %>% head(1))
-  
+    ))) 
   
   data.pca <- data %>%
     dplyr::select(numeric.cols) %>%

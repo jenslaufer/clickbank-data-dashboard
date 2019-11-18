@@ -47,7 +47,8 @@ shinyServer(function(input, output, session) {
     
     brushed.data <- reactive({
         brushedPoints(
-            data,
+            data %>%
+                filter(`Date` == max(`Date`), is.na(ParentCategory)),
             brush = input$pca.plot.brush,
             xvar = "PC1",
             yvar = "PC2"
@@ -56,6 +57,7 @@ shinyServer(function(input, output, session) {
     
     filtered.data <- reactive({
         data %>%
+            filter(`Date` == max(`Date`), is.na(ParentCategory)) %>%
             filter(Gravity >= input$Gravity[1] &
                        Gravity <= input$Gravity[2]) %>%
             filter(

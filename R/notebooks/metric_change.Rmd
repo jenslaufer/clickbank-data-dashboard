@@ -49,6 +49,6 @@ data2
 ```{r}
 data2 %>%
   filter(gr == "1") %>%
-  mutate_at(vars(contains('val')), list(change = ~ (. / lag(.) - 0))) 
+  mutate_at(vars(contains('val')), list(change = ~ (. / lag(.) - 1))) 
 ```
 

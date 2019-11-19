@@ -16,39 +16,22 @@ source("../apps/api.R")
 
 
 ```{r}
-data <- load.data()
-```
-
-
-```{r}
-data <- data %>% 
-  filter(is.na(ParentCategory)) %>% 
-  filter(Id ==  "SINGORAMA") %>% 
-  group_by(Id) %>% 
-  mutate(lag = dplyr::lag(Gravity), pct_change= (Gravity - dplyr::lag(Gravity)) / dplyr::lag(Gravity)) %>% 
-  ungroup() 
+data <- load.data() %>% 
+    mutate_at(c('Id', 'ParentCategory', 'Category'), ~ as.factor(.)) %>%
+    arrange(Id, ParentCategory, Category, Date)  %>%
+    group_by(Id, ParentCategory, Category) %>% 
+    mutate_at(numeric.cols, list(Change = ~ ((.) - dplyr::lag(.)) / dplyr::lag(.))) %>% 
+    ungroup()
 ```
 
 ```{r}
 data %>% 
-  select(Id, Date, Category, Gravity, lag, pct_change) %>% 
-  filter(pct_change >0) %>% 
-  filter(Id == "SINGORAMA") %>% 
-  arrange(Date)
+  #filter(Id == '0NOTHING0') %>% 
+  select(Id, ParentCategory, Category, Date, Gravity, Gravity_Change) %>% 
+  filter(Gravity_Change != Inf) %>% 
+  arrange(-Gravity_Change)
+  
 ```
 
-```{r}
-library(lubridate)
-grp1 <- tibble(time=seq(ymd('2000-01-01'),ymd('2000-01-06'), by="1 day"), gr=as.factor(c("1", "1", "1", "1", "1","1")), val1=c(4,5,6,7,2,5), val2=c(-1,-2,4,0,-3,-5)) 
 
-grp2 <- tibble(time=seq(ymd('2000-01-01'),ymd('2000-01-06'), by="1 day"), gr=as.factor(c("2", "2", "2", "2", "2","2")), val1=c(10,6,7,6,8,9), val2=c(1,3,8,-1,-3,-7))
-data2 <- grp1 %>% bind_rows(grp2)
-data2
-```
-
-```{r}
-data2 %>%
-  filter(gr == "1") %>%
-  mutate_at(vars(contains('val')), list(change = ~ (. / lag(.) - 1))) 
-```
 

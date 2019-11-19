@@ -47,7 +47,14 @@ load.data <- function(url = "mongodb://localhost") {
         ., probs = seq(0, 1, by = 0.20), na.rm = T
       ),),
       include.lowest = T
-    ))) 
+    )))
+  
+  data <- data %>%
+    mutate_at(c('Id', 'ParentCategory', 'Category'), ~ as.factor(.)) %>%
+    arrange(Id, ParentCategory, Category, Date)  %>%
+    group_by(Id, ParentCategory, Category) %>% 
+    mutate_at(numeric.cols, list(Change = ~ ((.) - dplyr::lag(.)) / dplyr::lag(.))) %>% 
+    ungroup()
   
   data.pca <- data %>%
     dplyr::select(numeric.cols) %>%

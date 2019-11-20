@@ -13,18 +13,19 @@ library(ggalt)
 library(mongolite)
 
 
+numeric.cols <-  c(
+  "Gravity",
+  "PercentPerSale",
+  "PercentPerRebill",
+  "AverageEarningsPerSale",
+  "InitialEarningsPerSale",
+  "TotalRebillAmt",
+  "Referred",
+  "Commission"
+)
+
+
 load.data <- function(url = "mongodb://localhost") {
-  numeric.cols <-  c(
-    "Gravity",
-    "PercentPerSale",
-    "PercentPerRebill",
-    "AverageEarningsPerSale",
-    "InitialEarningsPerSale",
-    "TotalRebillAmt",
-    "Referred",
-    "Commission"
-  )
-  
   con <- mongo("products", "clickbank", url)
   
   
@@ -45,17 +46,26 @@ load.data <- function(url = "mongodb://localhost") {
       .,
       breaks = unique(quantile(
         ., probs = seq(0, 1, by = 0.20), na.rm = T
-      ),),
+      ), ),
       include.lowest = T
-    )))
+    ))) %>%
+    mutate(ActivateDate = if_else(is.na(ActivateDate), as.Date("2000-01-01"), ActivateDate))
+  
   
   data <- data %>%
-    mutate_at(c('Id', 'ParentCategory', 'Category'), ~ as.factor(.)) %>%
     arrange(Id, ParentCategory, Category, Date)  %>%
-    group_by(Id, ParentCategory, Category) %>% 
-    mutate_at(numeric.cols, list(Change = ~ ((.) - dplyr::lag(.)) / dplyr::lag(.))) %>% 
+    group_by(Id, ParentCategory, Category) %>%
+    mutate_at(numeric.cols, list(Change = ~ ((.) - dplyr::lag(.)) / dplyr::lag(.))) %>%
     ungroup()
   
+  
+  # gmm <- Mclust(data %>% select(numeric.cols))
+  # data <- data %>% mutate(gmm.cluster = gmm$classification)
+  
+  data
+}
+
+cluster.data <- function(data) {
   data.pca <- data %>%
     dplyr::select(numeric.cols) %>%
     prcomp(center = T, scale. = T)
@@ -64,12 +74,6 @@ load.data <- function(url = "mongodb://localhost") {
   fit <- kmeans(data %>% select(PC1, PC2), 5)
   
   
-  data <- data %>% mutate(kmeans.cluster = fit$cluster) %>%
-    mutate(ActivateDate = if_else(is.na(ActivateDate), as.Date("2000-01-01"), ActivateDate))
-  
-  
-  # gmm <- Mclust(data %>% select(numeric.cols))
-  # data <- data %>% mutate(gmm.cluster = gmm$classification)
-  
+  data <- data %>% mutate(kmeans.cluster = fit$cluster)
   data
 }

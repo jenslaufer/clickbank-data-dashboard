@@ -28,7 +28,10 @@ shinyServer(function(input, output, session) {
     basicConfig(level = 10)
     loginfo("initializing...")
     
-    data <- load.data()
+    data <- load.data() %>%
+        filter(`Date` == max(`Date`),!is.na(ParentCategory)) %>% 
+        cluster.data()
+    
     logdebug(data %>% nrow())
     
     .update.slider(data, session, "Gravity")
@@ -47,8 +50,7 @@ shinyServer(function(input, output, session) {
     
     brushed.data <- reactive({
         brushedPoints(
-            data %>%
-                filter(`Date` == max(`Date`), is.na(ParentCategory)),
+            data,
             brush = input$pca.plot.brush,
             xvar = "PC1",
             yvar = "PC2"
@@ -56,8 +58,7 @@ shinyServer(function(input, output, session) {
     })
     
     filtered.data <- reactive({
-        data %>%
-            filter(`Date` == max(`Date`), is.na(ParentCategory)) %>%
+        result <- data %>%
             filter(Gravity >= input$Gravity[1] &
                        Gravity <= input$Gravity[2]) %>%
             filter(
@@ -92,40 +93,42 @@ shinyServer(function(input, output, session) {
                        Referred <= input$Referred[2]) %>%
             filter(Commission >= input$Commission[1] &
                        Commission <= input$Commission[2])
+        result
     })
     
     
     output$products.filtered <-
+        filtered.data() %>% select(Id) %>% head(5)
         renderDataTable(
             filtered.data() %>%
-                mutate(cluster = as.factor(kmeans.cluster)) %>%
+                mutate(Cluster = as.factor(kmeans.cluster)) %>%
                 select(
                     Id,
-                    cluster,
-                    Date,
-                    Title,
-                    ActivateDate,
-                    PopularityRank,
-                    Gravity,
-                    AverageEarningsPerSale,
-                    InitialEarningsPerSale
+                    # Cluster,
+                    # Date,
+                    # Title,
+                    # ActivateDate,
+                    # PopularityRank,
+                    # Gravity,
+                    # AverageEarningsPerSale,
+                    # InitialEarningsPerSale
                 )
         )
     
     output$products.brushed <-
         renderDataTable(
             brushed.data() %>%
-                mutate(cluster = as.factor(kmeans.cluster)) %>%
+                mutate(Cluster = as.factor(kmeans.cluster)) %>%
                 select(
                     Id,
-                    cluster,
-                    Title,
-                    Date,
-                    ActivateDate,
-                    PopularityRank,
-                    Gravity,
-                    AverageEarningsPerSale,
-                    InitialEarningsPerSale
+                    # Cluster,
+                    # Title,
+                    # Date,
+                    # ActivateDate,
+                    # PopularityRank,
+                    # Gravity,
+                    # AverageEarningsPerSale,
+                    # InitialEarningsPerSale
                 )
         )
     

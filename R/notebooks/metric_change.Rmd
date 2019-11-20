@@ -9,27 +9,47 @@ output: html_document
 knitr::opts_chunk$set(echo = F, message = F, warning = F)
 ```
 
+```{r}
+library(bbplot)
+```
+
 
 ```{r}
 source("../apps/api.R")
+windowsFonts(Helvetica = "TT Arial")
+```
+
+```{r}
+data <- load.data()
+```
+
+
+
+```{r}
+data %>%
+        filter(`Date` == max(`Date`),!is.na(ParentCategory)) %>% 
+        cluster.data()
 ```
 
 
 ```{r}
-data <- load.data() %>% 
-    mutate_at(c('Id', 'ParentCategory', 'Category'), ~ as.factor(.)) %>%
-    arrange(Id, ParentCategory, Category, Date)  %>%
-    group_by(Id, ParentCategory, Category) %>% 
-    mutate_at(numeric.cols, list(Change = ~ ((.) - dplyr::lag(.)) / dplyr::lag(.))) %>% 
-    ungroup()
+data %>% filter(Id == '007XHTML') %>% 
+  select(Id, Date, Gravity, Gravity_Change)
 ```
 
-```{r}
+
+```{r fig.height=10, fig.width=20}
 data %>% 
   #filter(Id == '0NOTHING0') %>% 
-  select(Id, ParentCategory, Category, Date, Gravity, Gravity_Change) %>% 
+  select(Id, Title, ParentCategory, Category, Date, Gravity, Gravity_Change) %>% 
   filter(Gravity_Change != Inf) %>% 
-  arrange(-Gravity_Change)
+  distinct(Id, .keep_all = T) %>% 
+  arrange(-Gravity_Change) %>% 
+  head(20) %>% 
+  ggplot() +
+  geom_bar(aes(x=reorder(paste(Id, Title, sep = ': '), Gravity_Change), y=Gravity_Change), stat = 'identity') +
+  coord_flip() +
+  bbc_style()
   
 ```
 

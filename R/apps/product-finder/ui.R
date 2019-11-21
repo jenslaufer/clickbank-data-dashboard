@@ -24,6 +24,7 @@ shinyUI(fluidPage(
                      column(
                          2,
                          .slider.input("Gravity", "Gravity"),
+                         .slider.input("Gravity_Change", "Gravity Change"),
                          .slider.input("PopularityRank", "PopularityRank"),
                          .slider.input("AverageEarningsPerSale", "Average Earnings Per Sale"),
                          .slider.input("InitialEarningsPerSale", "Initial Earnings Per Sale"),

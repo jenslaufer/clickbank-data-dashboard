@@ -9,9 +9,9 @@ library(ggrepel)
 source("../api.R")
 
 .update.slider <- function(data, session, field) {
-    max <- data %>% pull(field) %>% max(na.rm = TRUE) + 1
+    max <- data %>% pull(field) %>% max(na.rm = TRUE)
     min <-
-        data %>% pull(field) %>% min(na.rm = TRUE) - 1
+        data %>% pull(field) %>% min(na.rm = TRUE)
     
     logdebug("min: {min}, max: {max}" %>% glue)
     
@@ -29,12 +29,26 @@ shinyServer(function(input, output, session) {
     loginfo("initializing...")
     
     data <- load.data() %>%
-        filter(`Date` == max(`Date`),!is.na(ParentCategory)) %>% 
-        cluster.data()
+        filter(`Date` == max(`Date`), !is.na(ParentCategory)) %>%
+        cluster.data() %>%
+        mutate(Gravity_Change = replace(Gravity_Change, is.infinite(Gravity_Change), 100)) %>%
+        mutate(Gravity_Change = replace_na(Gravity_Change, 0), ) %>%
+        mutate(Gravity_Change = round(Gravity_Change * 100, 1)) %>%
+        mutate(Gravity_Change_Pct = if_else(
+            Gravity_Change > 0,
+            if_else(
+                Gravity_Change >= 10000,
+                ">>+{Gravity_Change} %" %>% glue(),
+                "+{Gravity_Change} %" %>% glue()
+            ),
+            "{Gravity_Change} %" %>% glue()
+        ))
+    
     
     logdebug(data %>% nrow())
     
     .update.slider(data, session, "Gravity")
+    .update.slider(data, session, "Gravity_Change")
     .update.slider(data, session, "PopularityRank")
     .update.slider(data, session, "AverageEarningsPerSale")
     .update.slider(data, session, "InitialEarningsPerSale")
@@ -61,6 +75,10 @@ shinyServer(function(input, output, session) {
         result <- data %>%
             filter(Gravity >= input$Gravity[1] &
                        Gravity <= input$Gravity[2]) %>%
+            filter(
+                Gravity_Change >= input$Gravity_Change[1] &
+                    Gravity_Change <= input$Gravity_Change[2]
+            ) %>%
             filter(
                 AverageEarningsPerSale >= input$AverageEarningsPerSale[1] &
                     AverageEarningsPerSale <= input$AverageEarningsPerSale[2]
@@ -98,20 +116,20 @@ shinyServer(function(input, output, session) {
     
     
     output$products.filtered <-
-        filtered.data() %>% select(Id) %>% head(5)
         renderDataTable(
             filtered.data() %>%
                 mutate(Cluster = as.factor(kmeans.cluster)) %>%
                 select(
                     Id,
-                    # Cluster,
-                    # Date,
-                    # Title,
-                    # ActivateDate,
-                    # PopularityRank,
-                    # Gravity,
-                    # AverageEarningsPerSale,
-                    # InitialEarningsPerSale
+                    #Date,
+                    Title,
+                    ActivateDate,
+                    PopularityRank,
+                    Gravity,
+                    Gravity_Change_Pct,
+                    AverageEarningsPerSale,
+                    InitialEarningsPerSale
+                    
                 )
         )
     
@@ -121,14 +139,15 @@ shinyServer(function(input, output, session) {
                 mutate(Cluster = as.factor(kmeans.cluster)) %>%
                 select(
                     Id,
-                    # Cluster,
-                    # Title,
-                    # Date,
-                    # ActivateDate,
-                    # PopularityRank,
-                    # Gravity,
-                    # AverageEarningsPerSale,
-                    # InitialEarningsPerSale
+                    Cluster,
+                    Title,
+                    #Date,
+                    ActivateDate,
+                    PopularityRank,
+                    Gravity,
+                    Gravity_Change_Pct,
+                    AverageEarningsPerSale,
+                    InitialEarningsPerSale
                 )
         )
     
@@ -150,7 +169,7 @@ shinyServer(function(input, output, session) {
     output$pcaPlot <- renderPlot({
         data %>%
             mutate(cluster = as.factor(kmeans.cluster)) %>%
-            arrange(-Gravity, -AverageEarningsPerSale) %>%
+            arrange(-Gravity,-AverageEarningsPerSale) %>%
             ggplot(aes(
                 x = PC1,
                 y = PC2,
@@ -179,7 +198,7 @@ shinyServer(function(input, output, session) {
         
         data %>%
             mutate(cluster = as.factor(kmeans.cluster)) %>%
-            arrange(-Gravity, -AverageEarningsPerSale) %>%
+            arrange(-Gravity,-AverageEarningsPerSale) %>%
             ggplot(aes(
                 x = PC1,
                 y = PC2,

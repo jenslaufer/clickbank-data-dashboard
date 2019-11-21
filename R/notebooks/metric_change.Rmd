@@ -52,6 +52,25 @@ data %>%
   bbc_style()
   
 ```
+```{r fig.height=10, fig.width=20}
+data %>% 
+  filter(Id == "HIGHEPCS", !is.na(ParentCategory)) %>% 
+  select(Id, Date, Category, Gravity, Gravity_Change) %>% 
+  na.omit() %>% 
+  arrange(Date) %>% 
+  mutate(Gravity_Change=Gravity_Change*100,
+         Date=as.Date(Date), 
+         sign=if_else(Gravity_Change < 0,"-","+")) %>% 
+  ggplot(aes(x=Date, y= Gravity_Change))+
+  #geom_bar(aes(fill=sign), stat="identity") +
+  geom_line(size=3)+
+  geom_point(size=5)+
+  geom_hline(aes(yintercept=0))+
+  scale_x_date(date_breaks = "1 day") +
+  scale_fill_tableau() +
+  bbc_style() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
 
 
 

@@ -7,6 +7,7 @@ library(ggrepel)
 
 
 source("../api.R")
+source("../visualisations.R")
 
 .update.slider <- function(data, session, field) {
     max <- data %>% pull(field) %>% max(na.rm = TRUE)
@@ -153,12 +154,7 @@ shinyServer(function(input, output, session) {
     
     output$gravityPlot <- renderPlot({
         filtered.data() %>%
-            ggplot(aes(
-                x = Gravity,
-                y = AverageEarningsPerSale,
-                color = PopularityRank_bin
-            )) +
-            geom_point()
+            plot.gravity.averageenarningspersale()
         
     })
     
@@ -170,43 +166,22 @@ shinyServer(function(input, output, session) {
         data %>%
             mutate(cluster = as.factor(kmeans.cluster)) %>%
             arrange(-Gravity,-AverageEarningsPerSale) %>%
-            ggplot(aes(
-                x = PC1,
-                y = PC2,
-                color = cluster
-            )) +
-            geom_point(alpha = 0.6, size = 2) +
-            scale_color_tableau()
+            plot.cluster.scatter()
     })
     
     output$pcaPlotMagnifier <- renderPlot({
         data <- brushed.data()
-        data <-
-            data %>%
+        data %>%
             mutate(Title = as.character(Title)) %>%
             mutate(selected.title = if_else(
                 Gravity %in%
-                    (
-                        data %>%
-                            arrange(-Gravity) %>%
-                            head(10) %>% pull(Gravity)
-                    ),
+                    (data %>%
+                         arrange(desc(Gravity)) %>%
+                         head(10) %>% pull(Gravity)),
                 Title,
                 ""
-            ))
-        
-        
-        data %>%
-            mutate(cluster = as.factor(kmeans.cluster)) %>%
-            arrange(-Gravity,-AverageEarningsPerSale) %>%
-            ggplot(aes(
-                x = PC1,
-                y = PC2,
-                color = cluster
-            )) +
-            geom_point(alpha = 0.6, size = 2) +
-            geom_label_repel(aes(label = selected.title)) +
-            scale_color_tableau()
+            )) %>%
+            plot.magnifier()
     })
     
 })

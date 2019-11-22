@@ -16,6 +16,7 @@ library(bbplot)
 
 ```{r}
 source("../apps/api.R")
+source("../apps/visualisations.R")
 windowsFonts(Helvetica = "TT Arial")
 ```
 
@@ -40,36 +41,12 @@ data %>% filter(Id == '007XHTML') %>%
 
 ```{r fig.height=10, fig.width=20}
 data %>% 
-  #filter(Id == '0NOTHING0') %>% 
-  select(Id, Title, ParentCategory, Category, Date, Gravity, Gravity_Change) %>% 
-  filter(Gravity_Change != Inf) %>% 
-  distinct(Id, .keep_all = T) %>% 
-  arrange(-Gravity_Change) %>% 
-  head(20) %>% 
-  ggplot() +
-  geom_bar(aes(x=reorder(paste(Id, Title, sep = ': '), Gravity_Change), y=Gravity_Change), stat = 'identity') +
-  coord_flip() +
-  bbc_style()
+  plot.gravity.change.barchart(10)
   
 ```
 ```{r fig.height=10, fig.width=20}
-data %>% 
-  filter(Id == "HIGHEPCS", !is.na(ParentCategory)) %>% 
-  select(Id, Date, Category, Gravity, Gravity_Change) %>% 
-  na.omit() %>% 
-  arrange(Date) %>% 
-  mutate(Gravity_Change=Gravity_Change*100,
-         Date=as.Date(Date), 
-         sign=if_else(Gravity_Change < 0,"-","+")) %>% 
-  ggplot(aes(x=Date, y= Gravity_Change))+
-  #geom_bar(aes(fill=sign), stat="identity") +
-  geom_line(size=3)+
-  geom_point(size=5)+
-  geom_hline(aes(yintercept=0))+
-  scale_x_date(date_breaks = "1 day") +
-  scale_fill_tableau() +
-  bbc_style() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+data %>%
+  plot.gravity.change.history("HIGHEPCS")
 ```
 
 

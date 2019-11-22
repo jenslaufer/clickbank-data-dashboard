@@ -2,6 +2,7 @@ library(tidyverse)
 library(ggthemes)
 library(logging)
 library(bbplot)
+library(scales)
 
 
 
@@ -25,7 +26,7 @@ plot.cluster.scatter <- function(data) {
 plot.magnifier <- function(data) {
   data %>%
     mutate(cluster = as.factor(kmeans.cluster)) %>%
-    arrange(-Gravity, -AverageEarningsPerSale) %>%
+    arrange(-Gravity,-AverageEarningsPerSale) %>%
     ggplot(aes(x = PC1,
                y = PC2,
                color = cluster)) +
@@ -36,7 +37,7 @@ plot.magnifier <- function(data) {
 
 plot.gravity.change.history <- function(data, id) {
   data %>%
-    filter(Id == id, !is.na(ParentCategory)) %>%
+    filter(Id == id,!is.na(ParentCategory)) %>%
     select(Id, Date, Category, Gravity, Gravity_Change) %>%
     na.omit() %>%
     arrange(Date) %>%
@@ -51,10 +52,11 @@ plot.gravity.change.history <- function(data, id) {
     geom_point(size = 8) +
     geom_hline(aes(yintercept = 0)) +
     scale_x_date(date_breaks = "1 day") +
-    scale_fill_manual(values = c("#E15759", "#4E79A7")) +
-    bbc_style() +
+    scale_fill_manual(values = c("#E15759", "#4E79A7"))  +
     theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-    guides(fill = FALSE)
+    guides(fill = FALSE) +
+    labs(title = "Gravity Change", subtitle = "Gravity Change in % over Time") +
+    bbc_style()
 }
 
 plot.gravity.change.barchart <- function(data, num) {
@@ -76,6 +78,7 @@ plot.gravity.change.barchart <- function(data, num) {
     ), y = Gravity_Change),
     stat = 'identity',
     fill = "#4E79A7") +
+    labs(title = "Gravity Change", subtitle = "Products with highest change in Gravity in %") +
     coord_flip() +
     bbc_style()
 }
@@ -84,7 +87,9 @@ plot.gravity.gravity.change <- function(data) {
   data %>%
     ggplot(aes(x = Gravity, y = Gravity_Change)) +
     geom_point(alpha = 0.2, color = "#4E79A7") +
-    scale_y_log10() +
-    scale_x_log10() +
+    scale_y_log10(labels = scales::comma) +
+    scale_x_log10(labels = scales::comma) +
+    labs(title = "Gravity Change vs Gravity",
+         subtitle = "Gravity (the higher the better) vs Gravity Change in % (the higher the better)") +
     bbc_style()
 }

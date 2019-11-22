@@ -40,14 +40,48 @@ data %>% filter(Id == '007XHTML') %>%
 
 
 ```{r fig.height=10, fig.width=20}
+
+source("../apps/visualisations.R")
 data %>% 
-  plot.gravity.change.barchart(10)
-  
-```
-```{r fig.height=10, fig.width=20}
-data %>%
-  plot.gravity.change.history("HIGHEPCS")
+  #filter(Gravity_Change <0.0010 & Gravity_Change >-0.001) %>%
+  filter(Gravity_Change < .2 & Gravity_Change > 0.19) %>% 
+  plot.gravity.change.barchart()
 ```
 
+```{r}
+
+source("../apps/visualisations.R")
+data %>% 
+  filter(is.na(ParentCategory)) %>% 
+  group_by(Id, Title,Gravity, ActivateDate) %>% 
+  dplyr::summarise(Gravity_Change_mean=median(Gravity_Change, na.rm = T), Gravity_Change_std=sd(Gravity_Change, na.rm = T)) %>% 
+  filter(Gravity > 5 & !is.infinite(Gravity_Change_mean) & Gravity_Change_mean>0) %>% 
+  arrange(-Gravity_Change_mean) 
+  
+```
+
+
+
+```{r fig.height=10, fig.width=20}
+
+  data %>%
+  filter(!is.na(ParentCategory)) %>% 
+  plot.gravity.change.history( "WAPTIPS")
+```
+
+
+```{r fig.height=10, fig.width=20}
+
+source("../apps/visualisations.R")
+data %>%
+  filter(is.na(ParentCategory)) %>% 
+  plot.gravity.change.history("EASIEST123")
+```
+
+```{r fig.height=10, fig.width=20}
+
+source("../apps/visualisations.R")
+data %>% plot.gravity.gravity.change
+```
 
 

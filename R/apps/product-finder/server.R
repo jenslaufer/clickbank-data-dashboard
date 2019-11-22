@@ -30,10 +30,10 @@ shinyServer(function(input, output, session) {
     loginfo("initializing...")
     
     data <- load.data() %>%
-        filter(`Date` == max(`Date`), !is.na(ParentCategory)) %>%
+        filter(`Date` == max(`Date`),!is.na(ParentCategory)) %>%
         cluster.data() %>%
         mutate(Gravity_Change = replace(Gravity_Change, is.infinite(Gravity_Change), 100)) %>%
-        mutate(Gravity_Change = replace_na(Gravity_Change, 0), ) %>%
+        mutate(Gravity_Change = replace_na(Gravity_Change, 0),) %>%
         mutate(Gravity_Change = round(Gravity_Change * 100, 1)) %>%
         mutate(Gravity_Change_Pct = if_else(
             Gravity_Change > 0,
@@ -63,7 +63,7 @@ shinyServer(function(input, output, session) {
     
     loginfo("initializing.")
     
-    brushed.data <- reactive({
+    pca.brushed.data <- reactive({
         brushedPoints(
             data,
             brush = input$pca.plot.brush,
@@ -71,6 +71,22 @@ shinyServer(function(input, output, session) {
             yvar = "PC2"
         )
     })
+    
+    gravity.gravity.change.brushed.data <- reactive({
+        filtered.data <- brushedPoints(
+            data,
+            brush = input$gravity.gravity.change.brush,
+            xvar = "Gravity",
+            yvar = "Gravity_Change"
+        )
+        if (filtered.data %>% nrow == 0) {
+            filtered.data <- data
+        }
+        
+        filtered.data
+    })
+    
+    
     
     filtered.data <- reactive({
         result <- data %>%
@@ -116,6 +132,7 @@ shinyServer(function(input, output, session) {
     })
     
     
+    
     output$products.filtered <-
         renderDataTable(
             filtered.data() %>%
@@ -136,7 +153,7 @@ shinyServer(function(input, output, session) {
     
     output$products.brushed <-
         renderDataTable(
-            brushed.data() %>%
+            pca.brushed.data() %>%
                 mutate(Cluster = as.factor(kmeans.cluster)) %>%
                 select(
                     Id,
@@ -162,15 +179,20 @@ shinyServer(function(input, output, session) {
         NULL
     })
     
+    output$gravity.gravity.change.plot <- renderPlot({
+        gravity.gravity.change.brushed.data() %>%
+            plot.gravity.gravity.change()
+    })
+    
     output$pcaPlot <- renderPlot({
         data %>%
             mutate(cluster = as.factor(kmeans.cluster)) %>%
-            arrange(-Gravity,-AverageEarningsPerSale) %>%
+            arrange(-Gravity, -AverageEarningsPerSale) %>%
             plot.cluster.scatter()
     })
     
     output$pcaPlotMagnifier <- renderPlot({
-        data <- brushed.data()
+        data <- pca.brushed.data()
         data %>%
             mutate(Title = as.character(Title)) %>%
             mutate(selected.title = if_else(
@@ -183,5 +205,8 @@ shinyServer(function(input, output, session) {
             )) %>%
             plot.magnifier()
     })
+    
+    
+    output
     
 })

@@ -53,6 +53,12 @@ shinyUI(fluidPage(
                 plotOutput("pcaPlotMagnifier", brush = "pca.plot.brush")
             )),
             dataTableOutput("products.brushed")
-        )
+        ), 
+        
+        tabPanel("Gravity Change",
+                 fixedRow(column(
+                     12,
+                     plotOutput("gravity.gravity.change.plot", brush = "gravity.gravity.change.brush") 
+                 )))
     )
 ))

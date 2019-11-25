@@ -9,31 +9,46 @@ library(ggrepel)
 source("../api.R")
 source("../visualisations.R")
 
-.update.slider <- function(data, session, field) {
+.update.slider <- function(data, session, field, name = field) {
     max <- data %>% pull(field) %>% max(na.rm = TRUE)
     min <-
         data %>% pull(field) %>% min(na.rm = TRUE)
     
-    logdebug("min: {min}, max: {max}" %>% glue)
+    logdebug("min: {min}, max: {max}" %>% glue())
     
     updateSliderInput(
         session,
-        field,
+        name,
         max = max,
         min = min,
         value = c(min, max)
     )
 }
 
+.update.numeric.range.input <-
+    function(data, session, field, name = field) {
+        max <- data %>% pull(field) %>% max(na.rm = TRUE)
+        min <-
+            data %>% pull(field) %>% min(na.rm = TRUE)
+        
+        logdebug("min: {min}, max: {max}" %>% glue())
+        
+        updateNumericRangeInput(session,
+                                name,
+                                label = "",
+                                value = c(min, max))
+    }
+
 shinyServer(function(input, output, session) {
     basicConfig(level = 10)
     loginfo("initializing...")
     
     data <- load.data() %>%
-        filter(`Date` == max(`Date`),!is.na(ParentCategory)) %>%
+        filter(`Date` == max(`Date`), !is.na(ParentCategory)) %>%
         cluster.data() %>%
+        mutate(Date = as.Date(Date, origin = "1970-01-01")) %>%
         mutate(Gravity_Change = replace(Gravity_Change, is.infinite(Gravity_Change), 100)) %>%
-        mutate(Gravity_Change = replace_na(Gravity_Change, 0),) %>%
+        mutate(Gravity_Change = replace_na(Gravity_Change, 0), ) %>%
         mutate(Gravity_Change = round(Gravity_Change * 100, 1)) %>%
         mutate(Gravity_Change_Pct = if_else(
             Gravity_Change > 0,
@@ -46,8 +61,14 @@ shinyServer(function(input, output, session) {
         ))
     
     
+    
     logdebug(data %>% nrow())
     
+    .update.numeric.range.input(data, session, "Gravity", "Gravity_Numeric_Input_Range")
+    .update.numeric.range.input(data,
+                                session,
+                                "Gravity_Change",
+                                "Gravity_Change_Numeric_Input_Range")
     .update.slider(data, session, "Gravity")
     .update.slider(data, session, "Gravity_Change")
     .update.slider(data, session, "PopularityRank")
@@ -73,17 +94,12 @@ shinyServer(function(input, output, session) {
     })
     
     gravity.gravity.change.brushed.data <- reactive({
-        filtered.data <- brushedPoints(
+        brushedPoints(
             data,
             brush = input$gravity.gravity.change.brush,
             xvar = "Gravity",
             yvar = "Gravity_Change"
         )
-        if (filtered.data %>% nrow == 0) {
-            filtered.data <- data
-        }
-        
-        filtered.data
     })
     
     
@@ -128,18 +144,44 @@ shinyServer(function(input, output, session) {
                        Referred <= input$Referred[2]) %>%
             filter(Commission >= input$Commission[1] &
                        Commission <= input$Commission[2])
+        
         result
     })
+    
+    gravity.gravity.change.brushed.data <- reactive({
+        brushedPoints(
+            data,
+            brush = input$gravity.gravity.change.brush,
+            xvar = "Gravity",
+            yvar = "Gravity_Change"
+        )
+    })
+    
+    
+    
+    filtered.data.gravity <- reactive({
+        result <- data %>%
+            filter(Gravity >= input$Gravity_Numeric_Input_Range[1] &
+                       Gravity <= input$Gravity_Numeric_Input_Range[2]) %>%
+            filter(
+                Gravity_Change >= input$Gravity_Change_Numeric_Input_Range[1] &
+                    Gravity_Change <= input$Gravity_Change_Numeric_Input_Range[2]
+            )
+        
+        result
+    })
+    
+    
+    
     
     
     
     output$products.filtered <-
         renderDataTable(
             filtered.data() %>%
-                mutate(Cluster = as.factor(kmeans.cluster)) %>%
                 select(
                     Id,
-                    #Date,
+                    Date,
                     Title,
                     ActivateDate,
                     PopularityRank,
@@ -147,19 +189,15 @@ shinyServer(function(input, output, session) {
                     Gravity_Change_Pct,
                     AverageEarningsPerSale,
                     InitialEarningsPerSale
-                    
                 )
         )
     
     output$products.brushed <-
         renderDataTable(
             pca.brushed.data() %>%
-                mutate(Cluster = as.factor(kmeans.cluster)) %>%
                 select(
                     Id,
-                    Cluster,
                     Title,
-                    #Date,
                     ActivateDate,
                     PopularityRank,
                     Gravity,
@@ -187,7 +225,7 @@ shinyServer(function(input, output, session) {
     output$pcaPlot <- renderPlot({
         data %>%
             mutate(cluster = as.factor(kmeans.cluster)) %>%
-            arrange(-Gravity, -AverageEarningsPerSale) %>%
+            arrange(-Gravity,-AverageEarningsPerSale) %>%
             plot.cluster.scatter()
     })
     
@@ -204,6 +242,11 @@ shinyServer(function(input, output, session) {
                 ""
             )) %>%
             plot.magnifier()
+    })
+    
+    output$gravity.change.barchart <- renderPlot({
+        filtered.data.gravity() %>%
+            plot.gravity.change.barchart()
     })
     
     

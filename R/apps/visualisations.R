@@ -64,7 +64,7 @@ plot.gravity.change.barchart <- function(data, id) {
     distinct(Id, .keep_all = T) %>%
     arrange(-Gravity_Change) %>%
     mutate(
-      Gravity_Change = Gravity_Change * 100,
+      Gravity_Change = Gravity_Change,
       Date = as.Date(Date),
       sign = if_else(Gravity_Change < 0, "-", "+")
     ) %>%

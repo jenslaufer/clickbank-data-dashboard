@@ -52,11 +52,11 @@ data %>%
 
 source("../apps/visualisations.R")
 data %>% 
-  filter(is.na(ParentCategory)) %>% 
+  filter(!is.na(ParentCategory)) %>% 
   group_by(Id, Title,Gravity, ActivateDate) %>% 
-  dplyr::summarise(Gravity_Change_mean=median(Gravity_Change, na.rm = T), Gravity_Change_std=sd(Gravity_Change, na.rm = T)) %>% 
-  filter(Gravity > 5 & !is.infinite(Gravity_Change_mean) & Gravity_Change_mean>0) %>% 
-  arrange(-Gravity_Change_mean) 
+  dplyr::summarise(Gravity_Change_mean=median(Gravity_Change, na.rm = T)) %>% 
+  filter(Gravity > 5 & !is.infinite(Gravity_Change_mean) & Gravity_Change_mean>0.01) %>% 
+  arrange(-Gravity,-Gravity_Change_mean) 
   
 ```
 
@@ -66,7 +66,7 @@ data %>%
 
   data %>%
   filter(!is.na(ParentCategory)) %>% 
-  plot.gravity.change.history( "WAPTIPS")
+  plot.gravity.change.history( "BLOODSUG")
 ```
 
 

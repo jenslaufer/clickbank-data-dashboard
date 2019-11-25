@@ -13,6 +13,15 @@ library(DT)
                 value = c(0, 1))
 }
 
+
+.numeric.input <- function(name, title) {
+    numericRangeInput(name,
+                      title,
+                      c(0, 100),
+                      width = "100%",
+                      separator = " to ")
+}
+
 shinyUI(fluidPage(
     theme = shinytheme("cosmo"),
     chooseSliderSkin("Modern", "DimGray"),
@@ -53,12 +62,17 @@ shinyUI(fluidPage(
                 plotOutput("pcaPlotMagnifier", brush = "pca.plot.brush")
             )),
             dataTableOutput("products.brushed")
-        ), 
+        ),
         
         tabPanel("Gravity Change",
-                 fixedRow(column(
-                     12,
-                     plotOutput("gravity.gravity.change.plot", brush = "gravity.gravity.change.brush") 
-                 )))
+                 fixedRow(
+                     column(
+                         3,
+                         .numeric.input("Gravity_Numeric_Input_Range", "Gravity"),
+                         .numeric.input("Gravity_Change_Numeric_Input_Range", "Gravity Change")
+                     ),
+                     column(9,
+                            plotOutput("gravity.change.barchart"))
+                 ))
     )
 ))

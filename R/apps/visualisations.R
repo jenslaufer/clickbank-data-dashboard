@@ -37,6 +37,11 @@ plot.magnifier <- function(data) {
 }
 
 plot.gravity.change.history <- function(data, id) {
+  title <- data %>%
+    filter(Id == id) %>%
+    distinct(Id, .keep_all = T) %>%
+    select(Title)
+  
   data %>%
     filter(Id == id) %>%
     arrange(Date) %>%
@@ -54,11 +59,11 @@ plot.gravity.change.history <- function(data, id) {
     scale_fill_manual(values = c("-" = "#E15759", "+" = "#4E79A7"))  +
     theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
     guides(fill = FALSE) +
-    labs(title = "Gravity Change", subtitle = "Gravity Change in % over Time") +
+    labs(title = "Gravity Change \"{title}\"" %>% glue(), subtitle = "Gravity Change in % over Time") +
     bbc_style()
 }
 
-plot.gravity.change.barchart <- function(data, id) {
+plot.gravity.change.barchart <- function(data) {
   data %>%
     filter(Gravity_Change != Inf) %>%
     distinct(Id, .keep_all = T) %>%
@@ -70,12 +75,12 @@ plot.gravity.change.barchart <- function(data, id) {
     ) %>%
     ggplot() +
     geom_bar(aes(
-      x = reorder(paste(Id, Title, sep = ': '), Gravity_Change),
+      x = reorder(Title, Gravity_Change),
       y = Gravity_Change,
       fill = sign
     ),
     stat = 'identity') +
-    labs(title = "Gravity Change", subtitle = "Product's Gravity Change in %") +
+    labs(title = "Gravity Change" , subtitle = "Product's Gravity Change in %") +
     scale_fill_manual(values = c("-" = "#E15759", "+" = "#4E79A7"))  +
     guides(fill = FALSE) +
     coord_flip() +

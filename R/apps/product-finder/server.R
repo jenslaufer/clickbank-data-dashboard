@@ -39,11 +39,27 @@ source("../visualisations.R")
                                 value = c(min, max))
     }
 
+
+.table.data <- function(data) {
+    data %>%
+        select(
+            Id,
+            Date,
+            Title,
+            ActivateDate,
+            PopularityRank,
+            Gravity,
+            Gravity_Change_Pct,
+            AverageEarningsPerSale,
+            InitialEarningsPerSale
+        )
+}
+
 shinyServer(function(input, output, session) {
     basicConfig(level = 10)
     loginfo("initializing...")
-    
-    data <- load.data() %>%
+    data.all <- load.data()
+    data <- data.all %>%
         filter(`Date` == max(`Date`), !is.na(ParentCategory)) %>%
         cluster.data() %>%
         mutate(Date = as.Date(Date, origin = "1970-01-01")) %>%
@@ -148,21 +164,14 @@ shinyServer(function(input, output, session) {
         result
     })
     
-    gravity.gravity.change.brushed.data <- reactive({
-        brushedPoints(
-            data,
-            brush = input$gravity.gravity.change.brush,
-            xvar = "Gravity",
-            yvar = "Gravity_Change"
-        )
-    })
-    
     
     
     filtered.data.gravity <- reactive({
         result <- data %>%
-            filter(Gravity >= input$Gravity_Numeric_Input_Range[1] &
-                       Gravity <= input$Gravity_Numeric_Input_Range[2]) %>%
+            filter(
+                Gravity >= input$Gravity_Numeric_Input_Range[1] &
+                    Gravity <= input$Gravity_Numeric_Input_Range[2]
+            ) %>%
             filter(
                 Gravity_Change >= input$Gravity_Change_Numeric_Input_Range[1] &
                     Gravity_Change <= input$Gravity_Change_Numeric_Input_Range[2]
@@ -172,40 +181,31 @@ shinyServer(function(input, output, session) {
     })
     
     
+    selected.product <- reactive({
+        result <-
+            nearPoints(data,
+                       input$plot_hover,
+                       xvar = "Gravity_Change",
+                       yvar = "Title")
+        print(input$plot_hover$x)
+        print(input$plot_hover$y)
+        print(result)
+        result
+    })
     
-    
+    selected.gravity.change.product <- reactive({
+        filtered.data.gravity() %>% slice(input$productsGravityFiltered_rows_selected[1])
+    })
     
     
     output$products.filtered <-
-        renderDataTable(
-            filtered.data() %>%
-                select(
-                    Id,
-                    Date,
-                    Title,
-                    ActivateDate,
-                    PopularityRank,
-                    Gravity,
-                    Gravity_Change_Pct,
-                    AverageEarningsPerSale,
-                    InitialEarningsPerSale
-                )
-        )
+        renderDataTable(filtered.data() %>% .table.data())
     
     output$products.brushed <-
-        renderDataTable(
-            pca.brushed.data() %>%
-                select(
-                    Id,
-                    Title,
-                    ActivateDate,
-                    PopularityRank,
-                    Gravity,
-                    Gravity_Change_Pct,
-                    AverageEarningsPerSale,
-                    InitialEarningsPerSale
-                )
-        )
+        renderDataTable(pca.brushed.data() %>% .table.data())
+    
+    output$productsGravityFiltered <-
+        renderDataTable(filtered.data.gravity() %>% .table.data(), selection = 'single')
     
     output$gravityPlot <- renderPlot({
         filtered.data() %>%
@@ -217,10 +217,6 @@ shinyServer(function(input, output, session) {
         NULL
     })
     
-    output$gravity.gravity.change.plot <- renderPlot({
-        gravity.gravity.change.brushed.data() %>%
-            plot.gravity.gravity.change()
-    })
     
     output$pcaPlot <- renderPlot({
         data %>%
@@ -247,6 +243,16 @@ shinyServer(function(input, output, session) {
     output$gravity.change.barchart <- renderPlot({
         filtered.data.gravity() %>%
             plot.gravity.change.barchart()
+    })
+    
+    output$plot.gravity.change.history <- renderPlot({
+        product = selected.gravity.change.product()
+        if (!is.null(product)) {
+            data.all %>%
+                plot.gravity.change.history(product %>% pull(Id))
+        } else{
+            NULL
+        }
     })
     
     

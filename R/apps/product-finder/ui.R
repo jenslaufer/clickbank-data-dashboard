@@ -64,15 +64,22 @@ shinyUI(fluidPage(
             dataTableOutput("products.brushed")
         ),
         
-        tabPanel("Gravity Change",
-                 fixedRow(
-                     column(
-                         3,
-                         .numeric.input("Gravity_Numeric_Input_Range", "Gravity"),
-                         .numeric.input("Gravity_Change_Numeric_Input_Range", "Gravity Change")
-                     ),
-                     column(9,
-                            plotOutput("gravity.change.barchart"))
-                 ))
+        tabPanel(
+            "Gravity Change",
+            fixedRow(
+                column(
+                    3,
+                    .numeric.input("Gravity_Numeric_Input_Range", "Gravity"),
+                    .numeric.input("Gravity_Change_Numeric_Input_Range", "Gravity Change")
+                ),
+                column(9,
+                       plotOutput("gravity.change.barchart",  click = "plot_hover"))
+            ),
+            fixedRow(column(
+                9, offset = 3,
+                plotOutput("plot.gravity.change.history")
+            )),
+            dataTableOutput("productsGravityFiltered")
+        )
     )
 ))

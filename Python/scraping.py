@@ -17,7 +17,7 @@ def _md5_file(fname):
     return hash_md5.hexdigest()
 
 
-logging.basicConfig(level=10)
+logging.basicConfig(level=30)
 target = "c:/temp"
 filename = f"{target}/clickbank.zip"
 filename_bak = f"{target}/clickbank_bak.zip"

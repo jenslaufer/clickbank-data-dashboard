@@ -70,7 +70,8 @@ shinyUI(fluidPage(
                 column(
                     3,
                     .numeric.input("Gravity_Numeric_Input_Range", "Gravity"),
-                    .numeric.input("Gravity_Change_Numeric_Input_Range", "Gravity Change")
+                    .numeric.input("Gravity_Change_Numeric_Input_Range", "Gravity Change"),
+                    .slider.input("GravityChangeActivateDate", "Activate Date")
                 ),
                 column(9,
                        plotOutput("gravity.change.barchart",  click = "plot_hover"))

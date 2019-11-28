@@ -85,6 +85,10 @@ shinyServer(function(input, output, session) {
                                 session,
                                 "Gravity_Change",
                                 "Gravity_Change_Numeric_Input_Range")
+    .update.slider(data,
+                   session,
+                   "ActivateDate",
+                   "GravityChangeActivateDate")
     .update.slider(data, session, "Gravity")
     .update.slider(data, session, "Gravity_Change")
     .update.slider(data, session, "PopularityRank")
@@ -151,7 +155,7 @@ shinyServer(function(input, output, session) {
             filter(
                 PopularityRank >= input$PopularityRank[1] &
                     PopularityRank <= input$PopularityRank[2]
-            )  %>%
+            ) %>%
             filter(
                 ActivateDate >= as.Date(input$ActivateDate[1]) &
                     ActivateDate <= as.Date(input$ActivateDate[2])
@@ -175,6 +179,10 @@ shinyServer(function(input, output, session) {
             filter(
                 Gravity_Change >= input$Gravity_Change_Numeric_Input_Range[1] &
                     Gravity_Change <= input$Gravity_Change_Numeric_Input_Range[2]
+            ) %>%
+            filter(
+                ActivateDate >= as.Date(input$GravityChangeActivateDate[1]) &
+                    ActivateDate <= as.Date(input$GravityChangeActivateDate[2])
             )
         
         result

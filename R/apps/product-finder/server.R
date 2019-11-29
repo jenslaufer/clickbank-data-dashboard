@@ -60,11 +60,11 @@ shinyServer(function(input, output, session) {
     loginfo("initializing...")
     data.all <- load.data()
     data <- data.all %>%
-        filter(`Date` == max(`Date`), !is.na(ParentCategory)) %>%
+        filter(`Date` == max(`Date`),!is.na(ParentCategory)) %>%
         cluster.data() %>%
         mutate(Date = as.Date(Date, origin = "1970-01-01")) %>%
         mutate(Gravity_Change = replace(Gravity_Change, is.infinite(Gravity_Change), 100)) %>%
-        mutate(Gravity_Change = replace_na(Gravity_Change, 0), ) %>%
+        mutate(Gravity_Change = replace_na(Gravity_Change, 0),) %>%
         mutate(Gravity_Change = round(Gravity_Change * 100, 1)) %>%
         mutate(Gravity_Change_Pct = if_else(
             Gravity_Change > 0,
@@ -195,14 +195,11 @@ shinyServer(function(input, output, session) {
                        input$plot_hover,
                        xvar = "Gravity_Change",
                        yvar = "Title")
-        print(input$plot_hover$x)
-        print(input$plot_hover$y)
-        print(result)
         result
     })
     
     selected.gravity.change.product <- reactive({
-        filtered.data.gravity() %>% slice(input$productsGravityFiltered_rows_selected[1])
+        filtered.data.gravity()
     })
     
     
@@ -229,7 +226,7 @@ shinyServer(function(input, output, session) {
     output$pcaPlot <- renderPlot({
         data %>%
             mutate(cluster = as.factor(kmeans.cluster)) %>%
-            arrange(-Gravity,-AverageEarningsPerSale) %>%
+            arrange(-Gravity, -AverageEarningsPerSale) %>%
             plot.cluster.scatter()
     })
     
@@ -254,9 +251,11 @@ shinyServer(function(input, output, session) {
     })
     
     output$plot.gravity.change.history <- renderPlot({
-        product = selected.gravity.change.product()
-        if (!is.null(product)) {
+        if (length(input$productsGravityFiltered_rows_selected) > 0) {
+            product <-
+                selected.gravity.change.product() %>% dplyr::slice(input$productsGravityFiltered_rows_selected[1])
             data.all %>%
+                filter(is.na(ParentCategory)) %>%
                 plot.gravity.change.history(product %>% pull(Id))
         } else{
             NULL

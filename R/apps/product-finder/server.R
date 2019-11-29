@@ -50,6 +50,7 @@ source("../visualisations.R")
             PopularityRank,
             Gravity,
             Gravity_Change_Pct,
+            Gravity_Change_Mean_Pct,
             AverageEarningsPerSale,
             InitialEarningsPerSale
         )
@@ -60,21 +61,27 @@ shinyServer(function(input, output, session) {
     loginfo("initializing...")
     data.all <- load.data()
     data <- data.all %>%
-        filter(`Date` == max(`Date`),!is.na(ParentCategory)) %>%
+        filter(`Date` == max(`Date`), !is.na(ParentCategory)) %>%
+        filter(!is.infinite(Gravity_Change) &
+                   !is.na(Gravity_Change)) %>%
         cluster.data() %>%
         mutate(Date = as.Date(Date, origin = "1970-01-01")) %>%
-        mutate(Gravity_Change = replace(Gravity_Change, is.infinite(Gravity_Change), 100)) %>%
-        mutate(Gravity_Change = replace_na(Gravity_Change, 0),) %>%
         mutate(Gravity_Change = round(Gravity_Change * 100, 1)) %>%
-        mutate(Gravity_Change_Pct = if_else(
-            Gravity_Change > 0,
-            if_else(
-                Gravity_Change >= 10000,
-                ">>+{Gravity_Change} %" %>% glue(),
-                "+{Gravity_Change} %" %>% glue()
-            ),
-            "{Gravity_Change} %" %>% glue()
-        ))
+        mutate(Gravity_Change_mean = round(Gravity_Change_mean * 100, 1)) %>%
+        mutate(
+            Gravity_Change_Pct = if_else(
+                Gravity_Change >= 0,
+                "+{Gravity_Change} %" %>% glue(),
+                "{Gravity_Change} %" %>% glue()
+            )
+        )  %>%
+        mutate(
+            Gravity_Change_Mean_Pct = if_else(
+                Gravity_Change_mean >= 0,
+                "+{Gravity_Change_mean} %" %>% glue(),
+                "{Gravity_Change_mean} %" %>% glue()
+            )
+        )
     
     
     
@@ -195,7 +202,7 @@ shinyServer(function(input, output, session) {
                        input$plot_hover,
                        xvar = "Gravity_Change",
                        yvar = "Title")
-        result
+        input$plot_hover
     })
     
     selected.gravity.change.product <- reactive({
@@ -226,7 +233,7 @@ shinyServer(function(input, output, session) {
     output$pcaPlot <- renderPlot({
         data %>%
             mutate(cluster = as.factor(kmeans.cluster)) %>%
-            arrange(-Gravity, -AverageEarningsPerSale) %>%
+            arrange(-Gravity,-AverageEarningsPerSale) %>%
             plot.cluster.scatter()
     })
     
@@ -251,6 +258,7 @@ shinyServer(function(input, output, session) {
     })
     
     output$plot.gravity.change.history <- renderPlot({
+        print(selected.product())
         if (length(input$productsGravityFiltered_rows_selected) > 0) {
             product <-
                 selected.gravity.change.product() %>% dplyr::slice(input$productsGravityFiltered_rows_selected[1])

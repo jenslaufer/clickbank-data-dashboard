@@ -27,7 +27,7 @@ plot.cluster.scatter <- function(data) {
 plot.magnifier <- function(data) {
   data %>%
     mutate(cluster = as.factor(kmeans.cluster)) %>%
-    arrange(-Gravity, -AverageEarningsPerSale) %>%
+    arrange(-Gravity,-AverageEarningsPerSale) %>%
     ggplot(aes(x = PC1,
                y = PC2,
                color = cluster)) +

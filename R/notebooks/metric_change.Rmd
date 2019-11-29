@@ -26,18 +26,6 @@ data <- load.data()
 
 
 
-```{r}
-data %>%
-        filter(`Date` == max(`Date`),!is.na(ParentCategory)) %>% 
-        cluster.data()
-```
-
-
-```{r}
-data %>% filter(Id == '007XHTML') %>% 
-  select(Id, Date, Gravity, Gravity_Change)
-```
-
 
 ```{r fig.height=10, fig.width=20}
 
@@ -82,6 +70,33 @@ data %>%
 
 source("../apps/visualisations.R")
 data %>% plot.gravity.gravity.change
+```
+
+
+
+```{r}
+
+data %>%  
+  arrange(-Gravity_Change_mean) %>% 
+  distinct(Id, .keep_all = T) %>% 
+  select(Id, Gravity_Change_mean) %>%
+  filter(!is.infinite(Gravity_Change_mean)) %>% 
+  arrange(-Gravity_Change_mean) 
+```
+
+```{r}
+data %>% 
+  filter(is.na(ParentCategory) & Id == "007XHTML") %>% 
+  select(Id, Date, Gravity, Gravity_Change, Gravity_Change_mean)
+```
+
+
+```{r fig.height=10, fig.width=20}
+
+source("../apps/visualisations.R")
+data %>%
+  filter(is.na(ParentCategory)) %>% 
+  plot.gravity.change.history("TRUST2021")
 ```
 
 

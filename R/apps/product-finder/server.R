@@ -14,7 +14,7 @@ source("../visualisations.R")
     min <-
         data %>% pull(field) %>% min(na.rm = TRUE)
     
-    logdebug("min: {min}, max: {max}" %>% glue())
+    logdebug(".update.slider: min: {min}, max: {max}" %>% glue())
     
     updateSliderInput(
         session,
@@ -27,11 +27,12 @@ source("../visualisations.R")
 
 .update.numeric.range.input <-
     function(data, session, field, name = field) {
+        logdebug(".update.numeric.range.input...")
         max <- data %>% pull(field) %>% max(na.rm = TRUE)
         min <-
             data %>% pull(field) %>% min(na.rm = TRUE)
         
-        logdebug("min: {min}, max: {max}" %>% glue())
+        logdebug(".update.numeric.range.input: min: {min}, max: {max}" %>% glue())
         
         updateNumericRangeInput(session,
                                 name,
@@ -60,10 +61,13 @@ shinyServer(function(input, output, session) {
     basicConfig(level = 10)
     loginfo("initializing...")
     data.all <- load.data()
+    
     data <- data.all %>%
         filter(`Date` == max(`Date`), !is.na(ParentCategory)) %>%
         filter(!is.infinite(Gravity_Change) &
                    !is.na(Gravity_Change)) %>%
+        filter(!is.infinite(Gravity_Change_mean) &
+                   !is.na(Gravity_Change_mean)) %>%
         cluster.data() %>%
         mutate(Date = as.Date(Date, origin = "1970-01-01")) %>%
         mutate(Gravity_Change = round(Gravity_Change * 100, 1)) %>%
@@ -81,21 +85,22 @@ shinyServer(function(input, output, session) {
                 "+{Gravity_Change_mean} %" %>% glue(),
                 "{Gravity_Change_mean} %" %>% glue()
             )
-        )
+        ) %>% 
+        arrange(desc(Gravity_Change_mean))
     
     
     
     logdebug(data %>% nrow())
     
-    .update.numeric.range.input(data, session, "Gravity", "Gravity_Numeric_Input_Range")
-    .update.numeric.range.input(data,
-                                session,
-                                "Gravity_Change",
-                                "Gravity_Change_Numeric_Input_Range")
+    #.update.numeric.range.input(data, session, "Gravity", "Gravity_Numeric_Input_Range")
     .update.slider(data,
-                   session,
-                   "ActivateDate",
-                   "GravityChangeActivateDate")
+                                session,
+                                "Gravity_Change_mean",
+                                "GravityChangeMean")
+    # .update.slider(data,
+    #                session,
+    #                "ActivateDate",
+    #                "GravityChangeActivateDate")
     .update.slider(data, session, "Gravity")
     .update.slider(data, session, "Gravity_Change")
     .update.slider(data, session, "PopularityRank")
@@ -179,18 +184,18 @@ shinyServer(function(input, output, session) {
     
     filtered.data.gravity <- reactive({
         result <- data %>%
+            # filter(
+            #     Gravity >= input$Gravity_Numeric_Input_Range[1] &
+            #         Gravity <= input$Gravity_Numeric_Input_Range[2]
+            # ) %>%
+            # filter(
+            #     ActivateDate >= as.Date(input$GravityChangeActivateDate[1]) &
+            #         ActivateDate <= as.Date(input$GravityChangeActivateDate[2])
+            # ) %>%
             filter(
-                Gravity >= input$Gravity_Numeric_Input_Range[1] &
-                    Gravity <= input$Gravity_Numeric_Input_Range[2]
-            ) %>%
-            filter(
-                Gravity_Change >= input$Gravity_Change_Numeric_Input_Range[1] &
-                    Gravity_Change <= input$Gravity_Change_Numeric_Input_Range[2]
-            ) %>%
-            filter(
-                ActivateDate >= as.Date(input$GravityChangeActivateDate[1]) &
-                    ActivateDate <= as.Date(input$GravityChangeActivateDate[2])
-            )
+                Gravity_Change_mean >= input$GravityChangeMean[1] &
+                    Gravity_Change_mean <= input$GravityChangeMean[2]
+            ) 
         
         result
     })

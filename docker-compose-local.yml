@@ -11,7 +11,7 @@ services:
     image: jenslaufer/cb-importer
     container_name: cb-importer
     # stdin_open: true
-    # tty: true
+    # ty: true
     # entrypoint: bash
     build:
       context: .

@@ -5,8 +5,6 @@ library(bbplot)
 library(scales)
 
 
-windowsFonts(Helvetica = "TT Arial")
-
 plot.gravity.averageenarningspersale <- function(data) {
   data %>%
     ggplot(aes(x = Gravity,

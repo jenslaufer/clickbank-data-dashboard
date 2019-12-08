@@ -10,9 +10,9 @@ services:
   cb-importer:
     image: jenslaufer/cb-importer
     container_name: cb-importer
-    stdin_open: true
-    tty: true
-    entrypoint: bash
+    # stdin_open: true
+    # tty: true
+    # entrypoint: bash
     build:
       context: .
       dockerfile: Dockerfile-py

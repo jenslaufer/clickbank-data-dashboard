@@ -5,3 +5,6 @@ COPY R/apps/ /srv/shiny-server/apps
 ARG MONGODB_URI=mongodb://cb-data-db
 
 RUN echo "MONGODB_URI=${MONGODB_URI}" >> /home/shiny/.Renviron
+
+ADD requirements.R requirements.R
+RUN Rscript requirements.R

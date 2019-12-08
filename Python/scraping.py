@@ -17,8 +17,8 @@ def _md5_file(fname):
     return hash_md5.hexdigest()
 
 
-logging.basicConfig(level=30)
-target = "c:/temp"
+logging.basicConfig(level=50)
+target = "/tmp"
 filename = f"{target}/clickbank.zip"
 filename_bak = f"{target}/clickbank_bak.zip"
 xml_file = f"{target}/marketplace_feed_v2.xml"
@@ -51,13 +51,13 @@ if do_import:
         zipObj.extractall(target)
 
     logging.info("loading xml...")
-    with open(xml_file, "r") as f:
+    with open(xml_file, "r", encoding="ISO-8859-1") as f:
         xml = f.read()
 
     logging.info("loading dict...")
 
     data_raw = json.loads(json.dumps(xmltodict.parse(xml)))
 
-    DataGather().do(data_raw)
+    DataGather(mongourl="mongodb://cb-data-db").do(data_raw)
 
     logging.info("import finalised.")

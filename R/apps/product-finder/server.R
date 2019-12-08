@@ -60,7 +60,16 @@ source("../visualisations.R")
 shinyServer(function(input, output, session) {
     basicConfig(level = 10)
     loginfo("initializing...")
-    data.all <- load.data()
+
+    
+    mongo.uri.env.var <- "MONGODB_URI"
+    mongo.url <- "mongodb://localhost"
+  
+    if (Sys.getenv(c(mongo.uri.env.var)) != "") {
+      mongo.url <- Sys.getenv(c(mongo.uri.env.var))
+    }
+    loginfo("mongourl: {mongo.url}" %>% glue())
+    data.all <- load.data(mongo.url)
     
     data <- data.all %>%
         filter(`Date` == max(`Date`), !is.na(ParentCategory)) %>%

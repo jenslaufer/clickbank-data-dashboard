@@ -1,0 +1,35 @@
+version: "3.7"
+
+services:
+  cb-data-portainer:
+    image: portainer/portainer:latest
+    container_name: cb-data-portainer
+    ports:
+      - 9000:9000
+
+  cb-importer:
+    image: jenslaufer/cb-importer
+    container_name: cb-importer
+    stdin_open: true
+    tty: true
+    entrypoint: bash
+    build:
+      context: .
+      dockerfile: Dockerfile-py
+
+  cb-dashboard:
+    image: jenslaufer/cb-data-dashboard
+    container_name: cb-dashboard
+    build:
+      context: .
+      dockerfile: Dockerfile-r
+      args:
+        MONGODB_URI: mongodb://cb-data-db
+    ports:
+      - 3838:3838
+
+  cb-data-db:
+    image: mongo
+    container_name: cb-data-db
+    ports:
+      - 27018:27017

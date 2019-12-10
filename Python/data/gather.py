@@ -1,19 +1,79 @@
 import logging
 from datetime import date, datetime
-from pymongo import MongoClient
+from pymongo import MongoClient, DESCENDING
+from zipfile import ZipFile
+from gridfs import GridFS
+import io
+import os
+import requests
+import xmltodict
+import json
+import logging
+from hashlib import md5
+from tempfile import gettempdir
+import io
 
 
 class DataGather:
+    DATA_URL = "https://accounts.clickbank.com/feeds/marketplace_feed_v2.xml.zip"
 
-    def __init__(self, mongourl="mongodb://localhost", import_date=datetime.combine(date.today(), datetime.min.time())):
+    def __init__(self, mongourl, dbname, import_date=datetime.combine(date.today(), datetime.min.time())):
         self.import_date = import_date
 
         client = MongoClient(mongourl)
-        db = client.clickbank
-        self.products = db.products
+        db = client[dbname]
+        self.fs = GridFS(db)
 
-    def do(self, data):
-        self._handle_categories(None, data.get('Catalog'))
+        self.products = db.products
+        self.files = db["fs.files"]
+
+    def do(self):
+        target = gettempdir()
+        filename = f"{target}/clickbank.zip"
+        filename_bak = f"{target}/clickbank_bak.zip"
+        xml_file = f"{target}/marketplace_feed_v2.xml"
+
+        logging.info("loading data from clickbank...")
+        result = requests.get(self.DATA_URL)
+
+        out = io.BytesIO(result.content)
+
+        self.fs.put(out.getvalue(), filename="marketplace_feed_v2.xml.zip",
+                    contentType="application/zip")
+
+        files = list(self.files.find({"filename": "marketplace_feed_v2.xml.zip"}).sort(
+            [("uploadDate", DESCENDING)]))
+        with open(filename, "wb") as f:
+            f.write(self.fs.find_one({"_id": files[0]["_id"]}).read())
+        if len(files) == 2:
+            with open(filename_bak, "wb") as f:
+                f.write(self.fs.find_one({"_id": files[1]["_id"]}).read())
+
+        do_import = True
+        if os.path.exists(filename_bak):
+            checksum_old = self._md5_file(filename_bak)
+            checksum_new = self._md5_file(filename)
+            if checksum_new == checksum_old:
+                logging.debug(
+                    "new file and sold file are the same. Do nothing.")
+                do_import = False
+
+        if do_import:
+            logging.debug("extracting zip...")
+            with ZipFile(filename, 'r') as zipObj:
+                zipObj.extractall(target)
+
+            logging.info("loading xml...")
+            with open(xml_file, "r", encoding="ISO-8859-1") as f:
+                xml = f.read()
+
+            logging.info("loading dict...")
+
+            data_raw = json.loads(json.dumps(xmltodict.parse(xml)))
+
+            logging.info("import finalised.")
+
+            self._handle_categories(None, data_raw.get('Catalog'))
 
     def _handle_categories(self, parent, node):
         if type(node) == list:
@@ -86,3 +146,11 @@ class DataGather:
             logging.debug("inserted {}".format(site["Id"]))
         except Exception as e:
             logging.error(f"_handle_site error: {site} {e}")
+
+    def _md5_file(self, fname):
+        hash_md5 = md5()
+        with open(fname, "rb") as f:
+            for chunk in iter(lambda: f.read(4096), b""):
+                hash_md5.update(chunk)
+
+        return hash_md5.hexdigest()

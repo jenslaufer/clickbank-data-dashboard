@@ -13,6 +13,9 @@ services:
     # stdin_open: true
     # ty: true
     # entrypoint: bash
+    environment:
+      - MONGO_URI = mongodb://cb-data-db
+      - LOG_LEVEL = 20
     build:
       context: .
       dockerfile: Dockerfile-py

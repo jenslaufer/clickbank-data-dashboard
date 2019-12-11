@@ -24,7 +24,7 @@ services:
     # entrypoint: bash
     environment:
       - MONGO_URI=mongodb://cb-data-db
-      - LOG_LEVEL=10
+      - LOG_LEVEL=50
     build:
       context: .
       dockerfile: Dockerfile-py

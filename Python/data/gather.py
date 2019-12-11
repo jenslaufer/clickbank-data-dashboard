@@ -1,6 +1,6 @@
 import logging
 from datetime import date, datetime
-from pymongo import MongoClient, DESCENDING
+from pymongo import MongoClient, DESCENDING, ASCENDING
 from zipfile import ZipFile
 from gridfs import GridFS
 import io
@@ -25,6 +25,12 @@ class DataGather:
         self.fs = GridFS(db)
 
         self.products = db.products
+        self.products.create_index(
+            [("_id", ASCENDING), ("Category", ASCENDING), ("Date", ASCENDING)])
+        self.products.create_index(
+            [("_id", ASCENDING), ("ParentCategory", ASCENDING), ("Category", ASCENDING), ("Date", ASCENDING)])
+        self.products.create_index(
+            [("Date", ASCENDING)])
         self.files = db["fs.files"]
 
     def do(self):

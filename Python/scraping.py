@@ -2,7 +2,7 @@ import logging
 import os
 from data.gather import DataGather
 
-logging.basicConfig(level=os.environ.get('LOG_LEVEL', 20))
+logging.basicConfig(level=int(os.environ.get('LOG_LEVEL', 30)))
 mongo_url = os.environ.get('MONGO_URI', "mongodb://localhost:27018")
 db_name = 'clickbank'
 logging.info("scraping data....")

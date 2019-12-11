@@ -7,6 +7,15 @@ services:
     ports:
       - 9000:9000
 
+  cb-reverse-proxy:
+    image: jenslaufer/cb-reverse-proxy
+    container_name: cb-reverse-proxy
+    ports:
+      - 80:80
+    build:
+      context: .
+      dockerfile: Dockerfile-nginx
+
   cb-importer:
     image: jenslaufer/cb-importer
     container_name: cb-importer
@@ -14,8 +23,8 @@ services:
     # ty: true
     # entrypoint: bash
     environment:
-      - MONGO_URI = mongodb://cb-data-db
-      - LOG_LEVEL = 20
+      - MONGO_URI=mongodb://cb-data-db
+      - LOG_LEVEL=10
     build:
       context: .
       dockerfile: Dockerfile-py
@@ -28,8 +37,6 @@ services:
       dockerfile: Dockerfile-r
       args:
         MONGODB_URI: mongodb://cb-data-db
-    ports:
-      - 3838:3838
 
   cb-data-db:
     image: mongo

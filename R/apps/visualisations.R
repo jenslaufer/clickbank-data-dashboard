@@ -5,8 +5,6 @@ library(bbplot)
 library(scales)
 
 
-windowsFonts(Helvetica = "TT Arial")
-
 plot.gravity.averageenarningspersale <- function(data) {
   data %>%
     ggplot(aes(x = Gravity,
@@ -59,7 +57,7 @@ plot.gravity.change.history <- function(data, id) {
     scale_fill_manual(values = c("-" = "#E15759", "+" = "#4E79A7"))  +
     theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
     guides(fill = FALSE) +
-    labs(title = "Gravity Change \"{title}\"" %>% glue(), subtitle = "Gravity Change in % over Time") +
+    labs(title = "{title}" %>% glue(), subtitle = "Gravity Change in % over Time") +
     bbc_style()
 }
 

@@ -14,7 +14,7 @@ source("../visualisations.R")
     min <-
         data %>% pull(field) %>% min(na.rm = TRUE)
     
-    logdebug("min: {min}, max: {max}" %>% glue())
+    logdebug(".update.slider: min: {min}, max: {max}" %>% glue())
     
     updateSliderInput(
         session,
@@ -27,11 +27,12 @@ source("../visualisations.R")
 
 .update.numeric.range.input <-
     function(data, session, field, name = field) {
+        logdebug(".update.numeric.range.input...")
         max <- data %>% pull(field) %>% max(na.rm = TRUE)
         min <-
             data %>% pull(field) %>% min(na.rm = TRUE)
         
-        logdebug("min: {min}, max: {max}" %>% glue())
+        logdebug(".update.numeric.range.input: min: {min}, max: {max}" %>% glue())
         
         updateNumericRangeInput(session,
                                 name,
@@ -50,6 +51,7 @@ source("../visualisations.R")
             PopularityRank,
             Gravity,
             Gravity_Change_Pct,
+            Gravity_Change_Mean_Pct,
             AverageEarningsPerSale,
             InitialEarningsPerSale
         )
@@ -58,33 +60,56 @@ source("../visualisations.R")
 shinyServer(function(input, output, session) {
     basicConfig(level = 10)
     loginfo("initializing...")
-    data.all <- load.data()
+
+    
+    mongo.uri.env.var <- "MONGODB_URI"
+    mongo.url <- "mongodb://localhost"
+  
+    if (Sys.getenv(c(mongo.uri.env.var)) != "") {
+      mongo.url <- Sys.getenv(c(mongo.uri.env.var))
+    }
+    loginfo("mongourl: {mongo.url}" %>% glue())
+    data.all <- load.data(mongo.url)
+    
     data <- data.all %>%
         filter(`Date` == max(`Date`), !is.na(ParentCategory)) %>%
+        filter(!is.infinite(Gravity_Change) &
+                   !is.na(Gravity_Change)) %>%
+        filter(!is.infinite(Gravity_Change_mean) &
+                   !is.na(Gravity_Change_mean)) %>%
         cluster.data() %>%
         mutate(Date = as.Date(Date, origin = "1970-01-01")) %>%
-        mutate(Gravity_Change = replace(Gravity_Change, is.infinite(Gravity_Change), 100)) %>%
-        mutate(Gravity_Change = replace_na(Gravity_Change, 0), ) %>%
         mutate(Gravity_Change = round(Gravity_Change * 100, 1)) %>%
-        mutate(Gravity_Change_Pct = if_else(
-            Gravity_Change > 0,
-            if_else(
-                Gravity_Change >= 10000,
-                ">>+{Gravity_Change} %" %>% glue(),
-                "+{Gravity_Change} %" %>% glue()
-            ),
-            "{Gravity_Change} %" %>% glue()
-        ))
+        mutate(Gravity_Change_mean = round(Gravity_Change_mean * 100, 1)) %>%
+        mutate(
+            Gravity_Change_Pct = if_else(
+                Gravity_Change >= 0,
+                "+{Gravity_Change} %" %>% glue(),
+                "{Gravity_Change} %" %>% glue()
+            )
+        )  %>%
+        mutate(
+            Gravity_Change_Mean_Pct = if_else(
+                Gravity_Change_mean >= 0,
+                "+{Gravity_Change_mean} %" %>% glue(),
+                "{Gravity_Change_mean} %" %>% glue()
+            )
+        ) %>% 
+        arrange(desc(Gravity_Change_mean))
     
     
     
     logdebug(data %>% nrow())
     
-    .update.numeric.range.input(data, session, "Gravity", "Gravity_Numeric_Input_Range")
-    .update.numeric.range.input(data,
+    #.update.numeric.range.input(data, session, "Gravity", "Gravity_Numeric_Input_Range")
+    .update.slider(data,
                                 session,
-                                "Gravity_Change",
-                                "Gravity_Change_Numeric_Input_Range")
+                                "Gravity_Change_mean",
+                                "GravityChangeMean")
+    # .update.slider(data,
+    #                session,
+    #                "ActivateDate",
+    #                "GravityChangeActivateDate")
     .update.slider(data, session, "Gravity")
     .update.slider(data, session, "Gravity_Change")
     .update.slider(data, session, "PopularityRank")
@@ -151,7 +176,7 @@ shinyServer(function(input, output, session) {
             filter(
                 PopularityRank >= input$PopularityRank[1] &
                     PopularityRank <= input$PopularityRank[2]
-            )  %>%
+            ) %>%
             filter(
                 ActivateDate >= as.Date(input$ActivateDate[1]) &
                     ActivateDate <= as.Date(input$ActivateDate[2])
@@ -168,14 +193,18 @@ shinyServer(function(input, output, session) {
     
     filtered.data.gravity <- reactive({
         result <- data %>%
+            # filter(
+            #     Gravity >= input$Gravity_Numeric_Input_Range[1] &
+            #         Gravity <= input$Gravity_Numeric_Input_Range[2]
+            # ) %>%
+            # filter(
+            #     ActivateDate >= as.Date(input$GravityChangeActivateDate[1]) &
+            #         ActivateDate <= as.Date(input$GravityChangeActivateDate[2])
+            # ) %>%
             filter(
-                Gravity >= input$Gravity_Numeric_Input_Range[1] &
-                    Gravity <= input$Gravity_Numeric_Input_Range[2]
-            ) %>%
-            filter(
-                Gravity_Change >= input$Gravity_Change_Numeric_Input_Range[1] &
-                    Gravity_Change <= input$Gravity_Change_Numeric_Input_Range[2]
-            )
+                Gravity_Change_mean >= input$GravityChangeMean[1] &
+                    Gravity_Change_mean <= input$GravityChangeMean[2]
+            ) 
         
         result
     })
@@ -187,14 +216,11 @@ shinyServer(function(input, output, session) {
                        input$plot_hover,
                        xvar = "Gravity_Change",
                        yvar = "Title")
-        print(input$plot_hover$x)
-        print(input$plot_hover$y)
-        print(result)
-        result
+        input$plot_hover
     })
     
     selected.gravity.change.product <- reactive({
-        filtered.data.gravity() %>% slice(input$productsGravityFiltered_rows_selected[1])
+        filtered.data.gravity()
     })
     
     
@@ -246,9 +272,12 @@ shinyServer(function(input, output, session) {
     })
     
     output$plot.gravity.change.history <- renderPlot({
-        product = selected.gravity.change.product()
-        if (!is.null(product)) {
+        print(selected.product())
+        if (length(input$productsGravityFiltered_rows_selected) > 0) {
+            product <-
+                selected.gravity.change.product() %>% dplyr::slice(input$productsGravityFiltered_rows_selected[1])
             data.all %>%
+                filter(is.na(ParentCategory)) %>%
                 plot.gravity.change.history(product %>% pull(Id))
         } else{
             NULL

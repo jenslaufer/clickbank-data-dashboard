@@ -62,6 +62,16 @@ load.data <- function(url = "mongodb://localhost") {
   # gmm <- Mclust(data %>% select(numeric.cols))
   # data <- data %>% mutate(gmm.cluster = gmm$classification)
   
+  data <- data %>% inner_join(
+    data %>%
+      filter(!is.na(ParentCategory)) %>%
+      group_by(Id) %>%
+      dplyr::summarise(Gravity_Change_mean = median(Gravity_Change, na.rm = T)) %>%
+      arrange(-Gravity_Change_mean) %>%
+      ungroup(),
+    by = "Id"
+  )
+  
   data
 }
 

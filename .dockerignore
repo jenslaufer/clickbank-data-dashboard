@@ -1,0 +1,9 @@
+test/
+content/
+research/
+test/
+*.Rproj
+.RData
+.Rhistory
+.Rproj.user
+.pytest_cache

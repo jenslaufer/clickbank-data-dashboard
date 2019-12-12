@@ -19,10 +19,8 @@ build-master:
 build-develop:
   stage: build
   script:
-    - docker build --pull -t "$CI_REGISTRY_IMAGE-importer:$CI_COMMIT_REF_SLUG" -f Dockerfile-py .
-    - docker push "$CI_REGISTRY_IMAGE-importer:$CI_COMMIT_REF_SLUG"
-    - docker build --pull -t "$CI_REGISTRY_IMAGE-dashboard:$CI_COMMIT_REF_SLUG" -f Dockerfile-r .
-    - docker push "$CI_REGISTRY_IMAGE-dashboard:$CI_COMMIT_REF_SLUG"
+    - docker build --pull -t "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG" .
+    - docker push "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG"
   only:
     - develop
   tags:

@@ -7,15 +7,6 @@ services:
     ports:
       - 9000:9000
 
-  cb-reverse-proxy:
-    image: jenslaufer/cb-reverse-proxy
-    container_name: cb-reverse-proxy
-    ports:
-      - 80:80
-    build:
-      context: .
-      dockerfile: Dockerfile-nginx
-
   cb-importer:
     image: jenslaufer/cb-importer
     container_name: cb-importer

@@ -1,13 +1,28 @@
+#!/usr/bin/env python
+
+import time
 import logging
 import os
 from data.gather import DataGather
+from apscheduler.schedulers.background import BackgroundScheduler
+
+logging.basicConfig()
+logging.getLogger('apscheduler').setLevel(logging.DEBUG)
+scheduler = BackgroundScheduler()
 
 logging.basicConfig(level=int(os.environ.get('LOG_LEVEL', 30)))
-mongo_url = os.environ.get('MONGO_URI', "mongodb://localhost:27018")
+mongo_url = os.environ.get('MONGO_URI', "mongodb://localhost")
 db_name = 'clickbank'
-logging.info("scraping data....")
 
 data_gather = DataGather(mongourl=mongo_url, dbname=db_name)
-data_gather.do()
 
-logging.info("scraping data.")
+
+def test():
+    print("It's running")
+
+
+scheduler.add_job(data_gather.do, 'interval', minutes=60)
+scheduler.start()
+
+while True:
+    time.sleep(500)

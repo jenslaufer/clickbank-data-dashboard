@@ -18,3 +18,4 @@ RUN R -e "install.packages('shinythemes',dependencies=TRUE, repos='http://cran.r
 RUN R -e "install.packages('shinycssloaders',dependencies=TRUE, repos='http://cran.rstudio.com/')"
 RUN R -e "install.packages('logging',dependencies=TRUE, repos='http://cran.rstudio.com/')"
 RUN R -e "install.packages('ggrepel',dependencies=TRUE, repos='http://cran.rstudio.com/')"
+RUN R -e "devtools::install_github('vqv/ggbiplot')"
